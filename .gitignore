@@ -1,0 +1,8 @@
+.idea/*
+__pycache__/*
+*.pygtex
+*.pygstyle
+*.pickle
+*.txt
+*.pdf
+*.json

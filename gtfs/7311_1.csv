@@ -1,0 +1,19 @@
+Linienvariante;1;1;1;1;1;1;1;1;1;1;1;1;1;1;1;1;1;1;1;1;1
+Route;1;1;1;1;1;1;1;1;1;1;1;1;1;1;1;1;1;1;1;1;1
+Fahrzeitprofil;FZP1;FZP1;FZP1;FZP1;FZP1;FZP1;FZP1;FZP1;FZP1;FZP1;FZP1;FZP1;FZP1;FZP1;FZP1;FZP1;FZP1;FZP1;FZP1;FZP1;FZP1
+Betriebstagsgruppe;#NAME?;100 Mo-Di+Fr;24 Mi-Do;#NAME?;24 Mi-Do;100 Mo-Di+Fr;#NAME?;#NAME?;#NAME?;100 Mo-Di+Fr;24 Mi-Do;#NAME?;2 Sa, 1 So;24 Mi-Do;24 Mi-Do;100 Mo-Di+Fr;24 Mi-Do;100 Mo-Di+Fr;2 Sa, 1 So;24 Mi-Do;100 Mo-Di+Fr
+Verkehrsbeschränkung;!;!;!;78;!;!;78;2;!;!;!;78;!;!;!;100;24;100;!;24;100
+Planungsbedingung;;~RF & ~UmlRVBP1;~UmlRVBP1;UmlRVBP1;~UmlRVBP1;~RF & ~UmlRVBP1;UmlRVBP1;;;~RF & ~UmlRVBP1;~UmlRVBP1;UmlRVBP1;;~UmlRVBP1;UmlRVBP1;;;;;;
+Fahrtart;N;N;N;N;N;N;N;N;N;N;N;N;N;N;N;N;N;N;N;N;N
+Fahrzeugtyp;SOLO;SOLO;SOLO;SOLO;SOLO;SOLO;SOLO;SOLO;SOLO;SOLO;SOLO;SOLO;SOLO;SOLO;SOLO;SOLO;SOLO;SOLO;SOLO;SOLO;SOLO
+Zielnummer der Route;8583;8583;8583;8583;8583;8583;8583;8583;8583;8583;8583;8583;8583;8583;8583;8583;8583;8583;8583;8583;8583
+Zieltext der Route;Elisabethen-;Elisabethen-;Elisabethen-;Elisabethen-;Elisabethen-;Elisabethen-;Elisabethen-;Elisabethen-;Elisabethen-;Elisabethen-;Elisabethen-;Elisabethen-;Elisabethen-;Elisabethen-;Elisabethen-;Elisabethen-;Elisabethen-;Elisabethen-;Elisabethen-;Elisabethen-;Elisabethen-
+Fahrtlänge;1798;1798;1798;1798;1798;1798;1798;1798;1798;1798;1798;1798;1798;1798;1798;1798;1798;1798;1798;1798;1798
+Fahrtnummer;7311001;7311003;7311003;7311003;7311005;7311005;7311005;7311015;7311017;7311007;7311007;7311007;7311009;7311009;7311009;7311009;7311011;7311011;7311013;7311013;7311013
+Fußnoten für Fahrplanbuch;Rollie + [1];Rollie + [1];Rollie + [1];Rollie + [1];Rollie + [1];Rollie + [1];Rollie + [1];Rollie + [1];Rollie + [1];Rollie + [1];Rollie + [1];Rollie + [1];Rollie + [1];Rollie + [1];Rollie + [1];Rollie + [1];Rollie + [1];Rollie + [1];Rollie + [1];Rollie + [1];Rollie + [1]
+Durchbindung von;;;;7303 / 2 / 09:29 - 09:44;;;7303 / 2 / 10:29 - 10:44;;;;;7303 / 2 / 14:29 - 14:44;;;7303 / 2 / 15:25 - 15:44;;;;;;
+Durchbindung auf;;;;;;;;;;;;;;;;;;;;;
+Ravensburg, Bahnhof, Mast 9;08:46;09:46;09:46;09:46;10:46;10:46;10:46;13:31;13:31;14:46;14:46;14:46;15:31;15:46;15:46;15:46;16:46;16:46;17:31;17:46;17:46
+Ravensburg, Frauentor, Mast 3;08:49;09:49;09:49;09:49;10:49;10:49;10:49;13:34;13:34;14:49;14:49;14:49;15:34;15:49;15:49;15:49;16:49;16:49;17:34;17:49;17:49
+Ravensburg, Gymnasien, Mast 2;08:50;09:50;09:50;09:50;10:50;10:50;10:50;13:35;13:35;14:50;14:50;14:50;15:35;15:50;15:50;15:50;16:50;16:50;17:35;17:50;17:50
+RV, St. Elisab.-Klinikum Pforte, Mast 1;08:53;09:53;09:53;09:53;10:53;10:53;10:53;13:38;13:38;14:53;14:53;14:53;15:38;15:53;15:53;15:53;16:53;16:53;17:38;17:53;17:53

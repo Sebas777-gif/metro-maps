@@ -1,0 +1,18 @@
+Linienvariante;1;1;1;1;1;1;1;1;1;1;1
+Route;1;1;1;1;1;1;1;1;1;1;1
+Fahrzeitprofil;FZP1;FZP1;FZP1;FZP1;FZP1;FZP1;FZP1;FZP1;FZP1;FZP1;FZP1
+Betriebstagsgruppe;#NAME?;#NAME?;#NAME?;#NAME?;#NAME?;#NAME?;#NAME?;#NAME?;#NAME?;#NAME?;#NAME?
+Verkehrsbeschränkung;!;!;2;2;!;2;!;2;!;!;!
+Planungsbedingung;;;;;;;;;;;
+Fahrtart;N;N;N;N;N;N;N;N;N;N;N
+Fahrzeugtyp;SOLO;SOLO;SOLO;SOLO;SOLO;SOLO;SOLO;SOLO;SOLO;SOLO;SOLO
+Zielnummer der Route;8573;8573;8573;8573;8573;8573;8573;8573;8573;8573;8573
+Zieltext der Route;Ummenwinkel;Ummenwinkel;Ummenwinkel;Ummenwinkel;Ummenwinkel;Ummenwinkel;Ummenwinkel;Ummenwinkel;Ummenwinkel;Ummenwinkel;Ummenwinkel
+Fahrtlänge;1549;1549;1549;1549;1549;1549;1549;1549;1549;1549;1549
+Fahrtnummer;7309001;7309003;7309101;7309103;7309005;7309105;7309007;7309107;7309009;7309011;7309013
+Fußnoten für Fahrplanbuch;Rollie + [1];Rollie + [1];Rollie + [1];Rollie + [1];Rollie + [1];Rollie + [1];Rollie + [1];Rollie + [1];Rollie + [1];Rollie + [1];Rollie + [1]
+Durchbindung von;;;;;;;;;;;
+Durchbindung auf;;;;;;;;;;;
+Ravensburg, Bahnhof, Mast 10;07:14;08:14;09:14;10:14;10:14;11:14;12:14;12:14;13:14;16:14;17:14
+Ravensburg, Deisenfang, Mast 1;07:16;08:16;09:16;10:16;10:16;11:16;12:16;12:16;13:16;16:16;17:16
+Ravensburg, Ummenwinkel, Mast 1;07:18;08:18;09:18;10:18;10:18;11:18;12:18;12:18;13:18;16:18;17:18
