@@ -17,7 +17,7 @@ GRIDS, SCALE, SEARCH_RADIUS, BEND_FACTOR, GEO_PENALTY = [float(x) for x in sys.a
 LINE_WIDTH = 0.1
 
 ROOT_DIR = os.path.dirname(os.path.abspath(__file__))
-os.chdir(os.path.join(ROOT_DIR, 'gtfs', 'rab'))
+os.chdir(os.path.join(ROOT_DIR, 'gtfs'))
 
 col_graph = nx.read_gpickle('color_graph_' + str(SEARCH_RADIUS) + '.pickle')
 grid_graph = nx.read_gpickle('grid_graph_' + str(SEARCH_RADIUS) + '.pickle')

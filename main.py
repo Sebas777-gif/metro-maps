@@ -13,7 +13,7 @@ from stops_class import Stop
 
 
 ROOT_DIR = os.path.dirname(os.path.abspath(__file__))
-os.chdir(os.path.join(ROOT_DIR, 'gtfs', 'rab'))
+os.chdir(os.path.join(ROOT_DIR, 'gtfs'))
 routes = pd.read_csv("routes.txt")
 agency_routes = routes[routes['route_id'].str.contains('7-3(0(1|3|[4-7]|9)|1(0|1|4|5)|2(0|1))')]  # Stadtbus RV-Wgt
 agency_route_ids = agency_routes.route_id.tolist()
