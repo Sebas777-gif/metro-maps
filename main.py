@@ -5,11 +5,14 @@ import math
 import os
 import sys
 import json
+import threading
 
 from collections import OrderedDict
 from aux_graphs import create_line_graph, create_color_graph
 from grid_graph import setup_grid_graph
 from stops_class import Stop
+from plotting import plot_graph
+from redirect import Redirect
 
 
 ROOT_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -48,8 +51,14 @@ def get_lat_size():
     return l_max - l_min
 
 
-def main(grids, scale, search_radius, bend_factor, geo_penalty):
+def run(grids, scale, search_radius, bend_factor, geo_penalty, text):
+    sys.stdout = Redirect(text)
+    threading.Thread(target=main, args=(grids, scale, search_radius, bend_factor, geo_penalty, text)).start()
 
+
+def main(grids, scale, search_radius, bend_factor, geo_penalty, *args):
+
+    print("Initialisiere...")
 
     orig_grids = grids
     THRESHOLD = 3 * search_radius
@@ -221,6 +230,8 @@ def main(grids, scale, search_radius, bend_factor, geo_penalty):
         grid_graph.nodes[st]['geo_dist'] = geo_dists[st]
 
     save_graphs(grid_graph, color_graph, search_radius)
+    plot_graph(orig_grids, scale, search_radius, bend_factor, geo_penalty, args[0])
+
 
 
 def calculate_paths(gri_graph, rou_lists, stops, stop_coods, point_routes, search_radius, bend_factor, geo_penalty, min_frac,
@@ -358,7 +369,7 @@ def calculate_paths(gri_graph, rou_lists, stops, stop_coods, point_routes, searc
             nb.settle()
 
         cnt += 1
-        print("Processed route {} of {}".format(cnt, len(rou_lists)))
+        print("Route {} von {} verarbeitet".format(cnt, len(rou_lists)))
 
     return gri_graph, stop_coods
 
@@ -425,7 +436,6 @@ def geodesic_dists(grid_graph, stops, skelet_graph):
             dist_sum += nx.bidirectional_dijkstra(skelet_graph, source=st, target=nb, weight='weight')[0]
         geo_dists[st] = dist_sum
         i += 1
-        print("Processed stop {} of {}".format(i, len([st for st in stops.keys() if grid_graph.nodes[st]['drawn']])))
     return geo_dists
 
 
