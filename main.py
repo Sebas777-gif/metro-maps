@@ -234,8 +234,8 @@ def main(grids, scale, search_radius, bend_factor, geo_penalty, *args):
 
 
 
-def calculate_paths(gri_graph, rou_lists, stops, stop_coods, point_routes, search_radius, bend_factor, geo_penalty, min_frac,
-                    threshold):
+def calculate_paths(gri_graph, rou_lists, stops, stop_coods, point_routes, search_radius, bend_factor, geo_penalty,
+                    min_frac, threshold):
 
     cnt = 0
 

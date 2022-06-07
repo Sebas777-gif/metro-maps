@@ -90,7 +90,7 @@ def check_for_collisions(grid_graph, node, pos, label_len, label_hgt):
               node_3[1] + make_length(geometry[(pos + 4) % 8], label_len)[1])
     node_poly = [node_1, node_2, node_3, node_4]
 
-    for nb_node in nx.ego_graph(grid_graph, node, radius=2 * label_len, distance='alt_weight').nodes:
+    for nb_node in nx.ego_graph(grid_graph, node, radius=3 * label_len, distance='alt_weight').nodes:
 
         nb_node = (nb_node[0], nb_node[1])
 
@@ -373,57 +373,3 @@ def plot_graph(grids, scale, search_radius, bend_factor, geo_penalty, text):
     plt.savefig('fahrplan_s' + str(search_radius) + 'gr' + str(grids) + 'b' + str(bend_factor) + 'geo'
                 + str(geo_penalty) + '.pdf', dpi=1400)
     print("Abgeschlossen.")
-
-
-def plot_grid(grids, scale, search_radius, bend_factor, geo_penalty):
-    col_graph = nx.read_gpickle('color_graph_' + str(search_radius) + '.pickle')
-    grid_graph = nx.read_gpickle('grid_graph_' + str(search_radius) + '.pickle')
-    edges_full = [e for e in col_graph.edges if col_graph.edges[e]['e_style'] == '']
-    colors_full = [col_graph.edges[e]['e_color'] for e in col_graph.edges if col_graph.edges[e]['e_style'] == '']
-    colors_dash = [col_graph.edges[e]['e_color'] for e in col_graph.edges if col_graph.edges[e]['e_style'] == 'dash']
-    colors_dot = [col_graph.edges[e]['e_color'] for e in col_graph.edges if col_graph.edges[e]['e_style'] == 'dot']
-    colors_dashdot = [col_graph.edges[e]['e_color'] for e in col_graph.edges
-                      if col_graph.edges[e]['e_style'] == 'dashdot']
-    edges_dash = [e for e in col_graph.edges if col_graph.edges[e]['e_style'] == 'dash']
-    edges_dot = [e for e in col_graph.edges if col_graph.edges[e]['e_style'] == 'dot']
-    edges_dashdot = [e for e in col_graph.edges if col_graph.edges[e]['e_style'] == 'dashdot']
-    fig = plt.figure(1)
-    ax = fig.add_subplot(1, 1, 1, aspect='equal')
-
-    grid_edges = [e for e in grid_graph.edges if grid_graph.edges[e]['e_type'] in ['h', 'v', 'd1', 'd2']]
-    nx.draw_networkx_edges(grid_graph, nx.get_node_attributes(grid_graph, 'pos'), edgelist=grid_edges,
-                           edge_color='grey',
-                           width=scale / 1000.0)
-
-    nx.draw_networkx_nodes(col_graph, nx.get_node_attributes(col_graph, 'pos'), node_size=0)
-    nx.draw_networkx_edges(col_graph, nx.get_node_attributes(col_graph, 'pos'), edgelist=edges_full,
-                           width=scale / 500.0, edge_color=colors_full, connectionstyle='arc3, rad = 0')
-    nx.draw_networkx_edges(col_graph, nx.get_node_attributes(col_graph, 'pos'), edgelist=edges_dash,
-                           width=scale / 500.0, edge_color=colors_dash, connectionstyle='arc3, rad = 0', style='dashed')
-    nx.draw_networkx_edges(col_graph, nx.get_node_attributes(col_graph, 'pos'), edgelist=edges_dot,
-                           width=scale / 500.0, edge_color=colors_dot, connectionstyle='arc3, rad = 0', style='dotted')
-    nx.draw_networkx_edges(col_graph, nx.get_node_attributes(col_graph, 'pos'), edgelist=edges_dashdot,
-                           width=scale / 500.0, edge_color=colors_dashdot,
-                           connectionstyle='arc3, rad = 0', style='dashdot')
-
-    drawn_nodes = []
-    for node in col_graph.nodes:
-        if col_graph.nodes[node]['n_size'] > 0:
-            pos = col_graph.nodes[node]['pos']
-            actual_node = col_graph.nodes[node]['gri_node']
-            if actual_node not in drawn_nodes:
-                drawn_nodes.append(actual_node)
-                gri_node = [x for x, ide in nx.get_node_attributes(grid_graph, 'ident').items() if ide
-                            == col_graph.nodes[node]['gri_node']][0]
-                hgt = max(grid_graph.nodes[gri_node]['block_ne'], grid_graph.nodes[gri_node]['block_n'],
-                          grid_graph.nodes[gri_node]['block_nw'], grid_graph.nodes[gri_node]['block_s'],
-                          grid_graph.nodes[gri_node]['block_se'], grid_graph.nodes[gri_node]['block_sw'],
-                          grid_graph.nodes[gri_node]['block_e'], grid_graph.nodes[gri_node]['block_w'])
-                hgt = math.log2(hgt + 2)
-
-                circle = Ellipse(pos, height=hgt * scale / 10.0, width=hgt * scale / 10.0, linewidth=scale / 1000.0,
-                                 facecolor='white', edgecolor='black', fill=True)
-                ax.add_patch(circle)
-
-    plt.savefig('fahrplan_s' + str(search_radius) + 'gr' + str(grids) + 'b' + str(bend_factor) + 'geo'
-                + str(geo_penalty) + '_grid.pdf', dpi=1000)
