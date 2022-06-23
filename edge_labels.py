@@ -6,8 +6,8 @@ import datetime
 
 def get_edge_labels():
 
-    root_dir = os.path.dirname(os.path.abspath(__file__))
-    os.chdir(os.path.join(root_dir, 'gtfs'))
+    ROOT_DIR = os.path.dirname(os.path.abspath(__file__))
+    os.chdir(os.path.join(ROOT_DIR, 'gtfs', 'rab'))
 
     times = {'7301': pd.read_csv("7301_1.csv", dtype=str, sep=";", header=None),
              '7303': pd.read_csv("7303_1.csv", dtype=str, sep=";", header=None),

@@ -7,13 +7,11 @@ import math
 import json
 import sys
 
-from redirect import Redirect
-
 
 LINE_WIDTH = 0.1
 
 ROOT_DIR = os.path.dirname(os.path.abspath(__file__))
-os.chdir(os.path.join(ROOT_DIR, 'gtfs'))
+os.chdir(os.path.join(ROOT_DIR, os.pardir, os.pardir, 'gtfs'))
 
 directions = {0: 'block_n', 1: 'block_ne', 2: 'block_e', 3: 'block_se',
               4: 'block_s', 5: 'block_sw', 6: 'block_w', 7: 'block_nw'}
