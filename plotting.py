@@ -47,7 +47,6 @@ def do_polygons_intersect(a, b):
     return True
 
 
-
 def make_length(v, length):
     current_len = math.sqrt(v[0] ** 2 + v[1] ** 2)
     return v[0] / current_len * length, v[1] / current_len * length
@@ -141,6 +140,7 @@ def check_for_collisions(grid_graph, node, pos, label_len, label_hgt):
 
     return False
 
+
 def place_label(grid_graph, node, stop_label):
 
     possible_pos = [i for i in range(8) if grid_graph.nodes[node][directions[i]] == 0]
@@ -213,15 +213,15 @@ def find_lines(route_lists):
 
 def optimize(grid_graph, line):
     invert_trans_table = [2, 6, 1, 3, 5, 7, 0, 4]
-    fitting_labels     = [0, 0, 0, 0, 0, 0, 0, 0]
-    trans_table        = [6, 2, 0, 3, 7, 4, 1, 5]
+    fitting_labels = [0, 0, 0, 0, 0, 0, 0, 0]
+    trans_table = [6, 2, 0, 3, 7, 4, 1, 5]
     for x in line:
         label_len = grid_graph.nodes[x]['label_len']
         label_hgt = grid_graph.nodes[x]['label_hgt']
         for i in range(8):
             if grid_graph.nodes[x][directions[i]] == 0 and not check_for_collisions(grid_graph, x, i, label_len,
                                                                                     label_hgt):
-                fitting_labels[trans_table[i]] =  fitting_labels[trans_table[i]] + 1
+                fitting_labels[trans_table[i]] = fitting_labels[trans_table[i]] + 1
     return invert_trans_table[np.argmax(fitting_labels)]
 
 
@@ -245,6 +245,8 @@ def optimize_consistency(grid_graph, straight_lines):
 
 def plot_graph(grids, geo_penalty, bend_factor, search_radius):
 
+    gri_graph = nx.read_gpickle('grid_graph_s' + str(search_radius) + 'gr' + str(grids) + 'b' + str(bend_factor)
+                                + 'geo' + str(geo_penalty) + '.pickle')
     col_graph = nx.read_gpickle('color_graph_s' + str(search_radius) + 'gr' + str(grids) + 'b' + str(bend_factor)
                                 + 'geo' + str(geo_penalty) + '.pickle')
 
@@ -263,10 +265,10 @@ def plot_graph(grids, geo_penalty, bend_factor, search_radius):
                                         col_graph.nodes[node]['pos'][1] + diff_y)
 
     array_string = []
-    for node in col_graph.nodes:
-        if col_graph.nodes[node]['n_size'] > 0:
-            node_string = {"id": str(col_graph.nodes[node]['gri_node']),
-                           "x": col_graph.nodes[node]['pos'][0], "y": col_graph.nodes[node]['pos'][1]}
+    for node in gri_graph.nodes:
+        if gri_graph.nodes[node]['node_type'] == 'standard':
+            node_string = {"id": str(node), "x": gri_graph.nodes[node]['pos'][0], "y": gri_graph.nodes[node]['pos'][1],
+                           "size": 3 if gri_graph.nodes[node]['drawn'] else 0}
             array_string.append(node_string)
 
     links_string = []
@@ -292,8 +294,6 @@ def plot_graph(grids, geo_penalty, bend_factor, search_radius):
         links_string.append(edge_string)
 
     params = {"nodes": array_string, "links": links_string}
-
-
 
     """
     node_list = sorted([node for node in grid_graph.nodes if grid_graph.nodes[node]['geo_dist'] >= 0

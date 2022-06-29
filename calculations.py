@@ -359,7 +359,6 @@ def calculate(grids, search_radius, bend_factor, geo_penalty):
 
     route_lists = OrderedDict(sorted(route_lists.items(), key=lambda li: len(li[1]), reverse=True))
 
-
     for route in route_lists.keys():
         for stop_1, stop_2 in zip(route_lists[route], route_lists[route][1:]):
             routes_of_pairs[(labels_of_ids[stop_1.get_id()], labels_of_ids[stop_2.get_id()])].append(route)

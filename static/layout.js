@@ -10,7 +10,7 @@ class Layout {
 
         let that = this;
 
-        let MARGIN = 10,
+        let MARGIN = 20,
             VIEW_WIDTH = Math.min(container.offsetHeight, container.offsetWidth) - 2 * MARGIN,
             HEIGHT = VIEW_WIDTH,
             WIDTH = VIEW_WIDTH;
@@ -20,8 +20,15 @@ class Layout {
         this.nodes = params["nodes"];
         this.links = params["links"];
 
-        console.log(this.nodes);
-        console.log(this.links);
+        let nodes = this.nodes.filter(d => d.size > 0)
+
+        let y = d3.scaleLinear()
+            .domain(d3.extent(nodes, d => d.y))
+            .range([HEIGHT - MARGIN, MARGIN]);
+
+        let x = d3.scaleLinear()
+            .domain(d3.extent(nodes, d => d.x))
+            .range([MARGIN, WIDTH - MARGIN]);
 
         // Create an SVG container to hold the visualization
 
@@ -33,11 +40,25 @@ class Layout {
 
         // Draw the links
 
+        let links = this.links.map(d => {
+            let obj = {};
+            let source = this.nodes.filter(e => e.id == d.source)[0];
+            let target = this.nodes.filter(e => e.id == d.target)[0];
+            obj['source'] = source;
+            obj['target'] = target;
+            return obj;
+        })
+
         let link = svg.selectAll('.link')
-            .data(this.links)
+            .data(links)
             .enter()
             .append('line')
-            .classed('link', true);
+            .classed('link', true)
+            .attr('stroke-width', 3)
+            .attr('x1', d => x(d.source.x))
+            .attr('x2', d => x(d.target.x))
+            .attr('y1', d => y(d.source.y))
+            .attr('y2', d => y(d.target.y));
 
         // Draw the nodes
 
@@ -46,10 +67,12 @@ class Layout {
             .enter()
             .append('circle')
             .classed('node', true)
-            .attr('r', WIDTH / 100)
-            .classed("fixed", d => d.fx !== undefined);
+            .attr('r', d => d.size)
+            .attr('cx', d => x(d.x))
+            .attr('cy', d => y(d.y));
 
 
+/*
         // Create a force layout object
 
         let force = d3.forceSimulation()
@@ -61,7 +84,6 @@ class Layout {
         let drag = d3
             .drag()
             .on("start", dragstart)
-            .on("drag", dragged);
 
         node.call(drag).on("click", click);
 
@@ -97,16 +119,7 @@ class Layout {
         function dragstart() {
             d3.select(this).classed("fixed", true);
         }
-
-        function dragged(event, d) {
-            d.fx = clamp(event.x, 0, WIDTH);
-            d.fy = clamp(event.y, 0, HEIGHT);
-            simulation.alpha(1).restart();
-        }
-
-        function clamp(x, lo, hi) {
-            return x < lo ? lo : x > hi ? hi : x;
-        }
+*/
     }
 }
 
