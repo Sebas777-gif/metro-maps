@@ -1,16 +1,13 @@
 import networkx as nx
-import matplotlib.pyplot as plt
 import numpy as np
-from matplotlib.patches import Ellipse
 import os
 import math
-import json
 
 
 LINE_WIDTH = 0.1
 
 ROOT_DIR = os.path.dirname(os.path.abspath(__file__))
-os.chdir(os.path.join(ROOT_DIR, os.pardir, os.pardir, 'gtfs'))
+os.chdir(os.path.join(ROOT_DIR, 'gtfs'))
 
 directions = {0: 'block_n', 1: 'block_ne', 2: 'block_e', 3: 'block_se',
               4: 'block_s', 5: 'block_sw', 6: 'block_w', 7: 'block_nw'}
@@ -246,34 +243,59 @@ def optimize_consistency(grid_graph, straight_lines):
         print("Linie {} von {} optimiert.".format(i, len(straight_lines)))
 
 
-def plot_graph(grids, scale, search_radius, bend_factor, geo_penalty):
+def plot_graph(grids, geo_penalty, bend_factor, search_radius):
 
-    col_graph = nx.read_gpickle('color_graph_' + str(search_radius) + '.pickle')
-    grid_graph = nx.read_gpickle('grid_graph_' + str(search_radius) + '.pickle')
+    col_graph = nx.read_gpickle('color_graph_s' + str(search_radius) + 'gr' + str(grids) + 'b' + str(bend_factor)
+                                + 'geo' + str(geo_penalty) + '.pickle')
 
     edges_full = [e for e in col_graph.edges if col_graph.edges[e]['e_style'] == '']
-    colors_full = [col_graph.edges[e]['e_color'] for e in col_graph.edges if col_graph.edges[e]['e_style'] == '']
-    colors_dash = [col_graph.edges[e]['e_color'] for e in col_graph.edges if col_graph.edges[e]['e_style'] == 'dash']
-    colors_dot = [col_graph.edges[e]['e_color'] for e in col_graph.edges if col_graph.edges[e]['e_style'] == 'dot']
-    colors_dashdot = [col_graph.edges[e]['e_color'] for e in col_graph.edges
-                      if col_graph.edges[e]['e_style'] == 'dashdot']
     edges_dash = [e for e in col_graph.edges if col_graph.edges[e]['e_style'] == 'dash']
     edges_dot = [e for e in col_graph.edges if col_graph.edges[e]['e_style'] == 'dot']
     edges_dashdot = [e for e in col_graph.edges if col_graph.edges[e]['e_style'] == 'dashdot']
-    fig = plt.figure(1)
-    ax = fig.add_subplot(1, 1, 1, aspect='equal')
 
-    nx.draw_networkx_nodes(col_graph, nx.get_node_attributes(col_graph, 'pos'), node_size=0, ax=ax)
-    nx.draw_networkx_edges(col_graph, nx.get_node_attributes(col_graph, 'pos'), edgelist=edges_full, ax=ax,
-                           width=scale / 500.0, edge_color=colors_full, connectionstyle='arc3, rad = 0')
-    nx.draw_networkx_edges(col_graph, nx.get_node_attributes(col_graph, 'pos'), edgelist=edges_dash, ax=ax,
-                           width=scale / 500.0, edge_color=colors_dash, connectionstyle='arc3, rad = 0', style='dashed')
-    nx.draw_networkx_edges(col_graph, nx.get_node_attributes(col_graph, 'pos'), edgelist=edges_dot, ax=ax,
-                           width=scale / 500.0, edge_color=colors_dot, connectionstyle='arc3, rad = 0', style='dotted')
-    nx.draw_networkx_edges(col_graph, nx.get_node_attributes(col_graph, 'pos'), edgelist=edges_dashdot, ax=ax,
-                           width=scale / 500.0, edge_color=colors_dashdot,
-                           connectionstyle='arc3, rad = 0', style='dashdot')
+    min_x = min([col_graph.nodes[node]['pos'][0] for node in col_graph.nodes])
+    min_y = min([col_graph.nodes[node]['pos'][1] for node in col_graph.nodes])
+    diff_x = - min_x
+    diff_y = - min_y
 
+    for node in col_graph.nodes:
+        col_graph.nodes[node]['pos'] = (col_graph.nodes[node]['pos'][0] + diff_x,
+                                        col_graph.nodes[node]['pos'][1] + diff_y)
+
+    array_string = []
+    for node in col_graph.nodes:
+        if col_graph.nodes[node]['n_size'] > 0:
+            node_string = {"id": str(col_graph.nodes[node]['gri_node']),
+                           "x": col_graph.nodes[node]['pos'][0], "y": col_graph.nodes[node]['pos'][1]}
+            array_string.append(node_string)
+
+    links_string = []
+    for edge in edges_full:
+        edge_string = {"source": str(col_graph.nodes[edge[0]]['gri_node']),
+                       "target": str(col_graph.nodes[edge[1]]['gri_node']),
+                       "color": col_graph.edges[edge]['e_color'], "dtype": 0}
+        links_string.append(edge_string)
+    for edge in edges_dash:
+        edge_string = {"source": str(col_graph.nodes[edge[0]]['gri_node']),
+                       "target": str(col_graph.nodes[edge[1]]['gri_node']),
+                       "color": col_graph.edges[edge]['e_color'], "dtype": 1}
+        links_string.append(edge_string)
+    for edge in edges_dot:
+        edge_string = {"source": str(col_graph.nodes[edge[0]]['gri_node']),
+                       "target": str(col_graph.nodes[edge[1]]['gri_node']),
+                       "color": col_graph.edges[edge]['e_color'], "dtype": 2}
+        links_string.append(edge_string)
+    for edge in edges_dashdot:
+        edge_string = {"source": str(col_graph.nodes[edge[0]]['gri_node']),
+                       "target": str(col_graph.nodes[edge[1]]['gri_node']),
+                       "color": col_graph.edges[edge]['e_color'], "dtype": 3}
+        links_string.append(edge_string)
+
+    params = {"nodes": array_string, "links": links_string}
+
+
+
+    """
     node_list = sorted([node for node in grid_graph.nodes if grid_graph.nodes[node]['geo_dist'] >= 0
                         and grid_graph.nodes[node]['drawn']], key=lambda x: grid_graph.nodes[x]['geo_dist'])
     beaut_labels = {}
@@ -346,25 +368,6 @@ def plot_graph(grids, scale, search_radius, bend_factor, geo_penalty):
             ax.text(x + x_fac * scale / 10.0, y + y_fac * scale / 10.0, beaut_labels[w],
                     fontsize=scale / 400.0, rotation=angle, rotation_mode='anchor')
 
-    drawn_nodes = []
-    for node in col_graph.nodes:
-        if col_graph.nodes[node]['n_size'] > 0:
-            pos = col_graph.nodes[node]['pos']
-            actual_node = col_graph.nodes[node]['gri_node']
-            if actual_node not in drawn_nodes:
-                drawn_nodes.append(actual_node)
-                gri_node = [x for x, ide in nx.get_node_attributes(grid_graph, 'ident').items() if ide
-                            == col_graph.nodes[node]['gri_node']][0]
-                hgt = max(grid_graph.nodes[gri_node]['block_ne'], grid_graph.nodes[gri_node]['block_n'],
-                          grid_graph.nodes[gri_node]['block_nw'], grid_graph.nodes[gri_node]['block_s'],
-                          grid_graph.nodes[gri_node]['block_se'], grid_graph.nodes[gri_node]['block_sw'],
-                          grid_graph.nodes[gri_node]['block_e'], grid_graph.nodes[gri_node]['block_w'])
-                hgt = math.log2(hgt + 2)
-
-                circle = Ellipse(pos, height=hgt * scale / 10.0, width=hgt * scale / 10.0, linewidth=scale / 1000.0,
-                                 facecolor='white', edgecolor='black', fill=True)
-                ax.add_patch(circle)
-
-    plt.savefig('fahrplan_s' + str(search_radius) + 'gr' + str(grids) + 'b' + str(bend_factor) + 'geo'
-                + str(geo_penalty) + '.pdf', dpi=1400)
     print("Abgeschlossen.")
+    """
+    return params

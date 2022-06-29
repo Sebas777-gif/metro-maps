@@ -1,0 +1,19 @@
+html, body {
+  height: 100%;
+}
+
+.layout-view {
+  height: 90%;
+}
+
+.node {
+    cursor: move;
+    fill: white;
+    stroke: black;
+    stroke-width: 1.5px;
+}
+
+.link {
+    stroke-width: 2px;
+    stroke: black;
+}

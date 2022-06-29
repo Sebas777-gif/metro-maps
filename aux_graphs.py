@@ -18,6 +18,10 @@ def create_line_graph(grid_graph):
     return line_graph
 
 
+def rgb_to_hex(rgb):
+    return '%02x%02x%02x' % rgb
+
+
 def create_color_graph(grid_graph, scale):
 
     color_graph = nx.Graph()
@@ -29,6 +33,7 @@ def create_color_graph(grid_graph, scale):
 
     edge_widths = get_edge_labels()
 
+    l = 0
     for (x, y) in grid_graph.edges:
         if grid_graph.edges[x, y]['e_type'] not in ['sink', 'bend']:
             u = (x[0], x[1])
@@ -39,7 +44,7 @@ def create_color_graph(grid_graph, scale):
             for route in grid_graph.edges[x, y]['routes']:
                 route_number = int(route)
                 rgb_color = tuple(color_map[route_number])
-                color = (rgb_color[0] / 255, rgb_color[1] / 255, rgb_color[2] / 255)
+                color = rgb_to_hex(rgb_color)
 
                 if color not in colors:
                     colors.append(color)

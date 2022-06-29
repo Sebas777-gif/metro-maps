@@ -7,21 +7,21 @@ import datetime
 def get_edge_labels():
 
     ROOT_DIR = os.path.dirname(os.path.abspath(__file__))
-    os.chdir(os.path.join(ROOT_DIR, 'gtfs', 'rab'))
+    os.chdir(os.path.join(ROOT_DIR, 'gtfs'))
 
-    times = {'7301': pd.read_csv("7301_1.csv", dtype=str, sep=";", header=None),
-             '7303': pd.read_csv("7303_1.csv", dtype=str, sep=";", header=None),
-             '7304': pd.read_csv("7304_1.csv", dtype=str, sep=";", header=None),
-             '7305': pd.read_csv("7305_1.csv", dtype=str, sep=";", header=None),
-             '7306': pd.read_csv("7306_1.csv", dtype=str, sep=";", header=None),
-             '7307': pd.read_csv("7307_1.csv", dtype=str, sep=";", header=None),
-             '7309': pd.read_csv("7309_1.csv", dtype=str, sep=";", header=None),
-             '7310': pd.read_csv("7310_1.csv", dtype=str, sep=";", header=None),
-             '7311': pd.read_csv("7311_1.csv", dtype=str, sep=";", header=None),
-             '7314': pd.read_csv("7314.csv", dtype=str, sep=";", header=None),
-             '7315': pd.read_csv("7315.csv", dtype=str, sep=";", header=None),
-             '7320': pd.read_csv("7320_1.csv", dtype=str, sep=";", header=None),
-             '7321': pd.read_csv("7321_1.csv", dtype=str, sep=";", header=None)}
+    times = {'7301': pd.read_csv("7301_1.csv", dtype=str, sep=";", header=None, encoding='unicode_escape'),
+             '7303': pd.read_csv("7303_1.csv", dtype=str, sep=";", header=None, encoding='unicode_escape'),
+             '7304': pd.read_csv("7304_1.csv", dtype=str, sep=";", header=None, encoding='unicode_escape'),
+             '7305': pd.read_csv("7305_1.csv", dtype=str, sep=";", header=None, encoding='unicode_escape'),
+             '7306': pd.read_csv("7306_1.csv", dtype=str, sep=";", header=None, encoding='unicode_escape'),
+             '7307': pd.read_csv("7307_1.csv", dtype=str, sep=";", header=None, encoding='unicode_escape'),
+             '7309': pd.read_csv("7309_1.csv", dtype=str, sep=";", header=None, encoding='unicode_escape'),
+             '7310': pd.read_csv("7310_1.csv", dtype=str, sep=";", header=None, encoding='unicode_escape'),
+             '7311': pd.read_csv("7311_1.csv", dtype=str, sep=";", header=None, encoding='unicode_escape'),
+             '7314': pd.read_csv("7314.csv", dtype=str, sep=";", header=None, encoding='unicode_escape'),
+             '7315': pd.read_csv("7315.csv", dtype=str, sep=";", header=None, encoding='unicode_escape'),
+             '7320': pd.read_csv("7320_1.csv", dtype=str, sep=";", header=None, encoding='unicode_escape'),
+             '7321': pd.read_csv("7321_1.csv", dtype=str, sep=";", header=None, encoding='unicode_escape')}
 
     modes = {}
 

@@ -1,0 +1,16 @@
+<!DOCTYPE html>
+
+<html lang="de">
+  <head>
+    <meta charset="UTF-8">
+    <title>Liniennetzplangenerierung</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='layout.css') }}">
+  </head>
+  <body>
+    <div id="layout" class="layout-view">
+      <script type="text/javascript" src="{{ url_for('static', filename='layout.js') }}"></script>
+      <script type="text/javascript" src="https://d3js.org/d3.v4.min.js"></script>
+      <script type="text/javascript">displayLayout({{data | tojson}})</script>
+    </div>
+  </body>
+</html>
