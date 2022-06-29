@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+
+<html lang="de">
+  <head>
+    <meta charset="UTF-8">
+    <title>Liniennetzplangenerierung</title>
+    <link rel="stylesheet" href="https://unpkg.com/@picocss/pico@latest/css/pico.min.css">
+  </head>
+
+  <body>
+    <main class="container">
+      <form>
+        <label for="grids">Zellen:</label><br>
+        <input type="number" id="grids" name="grids" placeholder="35"><br>
+        <label for="geo">Geo-Faktor:</label><br>
+        <input type="number" id="geo" name="geo" placeholder="1"><br>
+        <label for="bend">Knick-Faktor:</label><br>
+        <input type="number" id="bend" name="bend" placeholder="1"><br>
+        <label for="radius">Suchradius:</label><br>
+        <input type="range" id="radius" name="radius" min="0" max="7" step="1.0" value="0"><br>
+        <input type="submit" value="Berechne Layout">
+      </form>
+    </main>
+  </body>
+</html>

@@ -5,7 +5,6 @@ from matplotlib.patches import Ellipse
 import os
 import math
 import json
-import sys
 
 
 LINE_WIDTH = 0.1
@@ -247,9 +246,7 @@ def optimize_consistency(grid_graph, straight_lines):
         print("Linie {} von {} optimiert.".format(i, len(straight_lines)))
 
 
-def plot_graph(grids, scale, search_radius, bend_factor, geo_penalty, text):
-
-    sys.stdout = Redirect(text)
+def plot_graph(grids, scale, search_radius, bend_factor, geo_penalty):
 
     col_graph = nx.read_gpickle('color_graph_' + str(search_radius) + '.pickle')
     grid_graph = nx.read_gpickle('grid_graph_' + str(search_radius) + '.pickle')
