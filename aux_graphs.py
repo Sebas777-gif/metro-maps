@@ -19,7 +19,7 @@ def create_line_graph(grid_graph):
 
 
 def rgb_to_hex(rgb):
-    return '%02x%02x%02x' % rgb
+    return '#%02x%02x%02x' % rgb
 
 
 def create_color_graph(grid_graph, scale):

@@ -1,3 +1,5 @@
+"use strict";
+
 function displayLayout(params) {
     new Layout("layout", params);
 }
@@ -15,7 +17,7 @@ class Layout {
             HEIGHT = VIEW_WIDTH,
             WIDTH = VIEW_WIDTH;
 
-        this.LINK_WIDTH = 2;
+        this.LINK_WIDTH = 1;
 
         this.nodes = params["nodes"];
         this.links = params["links"];
@@ -46,8 +48,15 @@ class Layout {
             let target = this.nodes.filter(e => e.id == d.target)[0];
             obj['source'] = source;
             obj['target'] = target;
+            obj['color'] = d.color;
             return obj;
-        })
+        });
+
+        this.links = links;
+
+        this.prepareLinks(this.LINK_WIDTH);
+
+        console.log(links);
 
         let link = svg.selectAll('.link')
             .data(links)
@@ -55,10 +64,15 @@ class Layout {
             .append('line')
             .classed('link', true)
             .attr('stroke-width', 3)
+            .style('stroke', d => d.color)
             .attr('x1', d => x(d.source.x))
             .attr('x2', d => x(d.target.x))
             .attr('y1', d => y(d.source.y))
-            .attr('y2', d => y(d.target.y));
+            .attr('y2', d => y(d.target.y))
+            .attr('transform', d => {
+                let translation = this.calcTranslation(d.targetDistance, d.source, d.target);
+                return "translate(" + translation.dx + "," + translation.dy + ")";
+            });
 
         // Draw the nodes
 
@@ -70,6 +84,62 @@ class Layout {
             .attr('r', d => d.size)
             .attr('cx', d => x(d.x))
             .attr('cy', d => y(d.y));
+
+    }
+
+    /**
+     * @param {number} targetDistance
+     * @param {x, y} point0
+     * @param {x, y} point1, two points that define a line segment
+     * @returns
+     * a translation {dx, dy} from the given line segment, such that the distance between
+     * the given line segment and the translated line segment equals targetDistance
+     */
+    calcTranslation(targetDistance, point0, point1) {
+        let x1_x0 = point1.x - point0.x,
+            y1_y0 = point1.y - point0.y,
+            x2_x0, y2_y0;
+        if (y1_y0 === 0) {
+            x2_x0 = 0;
+            y2_y0 = targetDistance;
+        } else if (x1_x0 == 0) {
+            x2_x0 = - targetDistance;
+            y2_y0 = 0;
+        } else {
+            let angle = Math.atan(x1_x0 / y1_y0);
+            x2_x0 = - 2 * targetDistance * Math.cos(angle);
+            y2_y0 = 0;
+        }
+        return {
+            dx: x2_x0,
+            dy: y2_y0
+        };
+    }
+
+    /**
+     * @description
+     * Build an index to help handle the case of multiple links between two nodes
+     */
+    prepareLinks(link_width) {
+        let that = this,
+            linksFromNodes = {};
+        this.links.forEach(function(val, idx) {
+            let sid = val.source.id,
+                tid = val.target.id,
+                key = (sid < tid ? sid + "," + tid : tid + "," + sid);
+                console.log(key);
+            if (linksFromNodes[key] === undefined) {
+                linksFromNodes[key] = [idx];
+                val.multiIdx = 1;
+            } else {
+                val.multiIdx = linksFromNodes[key].push(idx);
+            }
+            // Calculate target link distance, from the index in the multiple-links array:
+            // 1 -> 0, 2 -> 2, 3 -> -2, 4 -> 4, 5 -> -4, ...
+            val.targetDistance = (val.multiIdx % 2 === 0 ? val.multiIdx * link_width : (- val.multiIdx + 1) * link_width);
+        });
+    }
+}
 
 
 /*
@@ -120,6 +190,4 @@ class Layout {
             d3.select(this).classed("fixed", true);
         }
 */
-    }
-}
 
