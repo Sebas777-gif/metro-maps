@@ -255,14 +255,20 @@ def plot_graph(grids, geo_penalty, bend_factor, search_radius):
     edges_dot = [e for e in col_graph.edges if col_graph.edges[e]['e_style'] == 'dot']
     edges_dashdot = [e for e in col_graph.edges if col_graph.edges[e]['e_style'] == 'dashdot']
 
-    min_x = min([col_graph.nodes[node]['pos'][0] for node in col_graph.nodes])
-    min_y = min([col_graph.nodes[node]['pos'][1] for node in col_graph.nodes])
+    min_x = min([gri_graph.nodes[node]['pos'][0] for node in gri_graph.nodes
+                 if gri_graph.nodes[node]['node_type'] == 'standard' and gri_graph.nodes[node]['drawn']])
+    min_y = min([gri_graph.nodes[node]['pos'][1] for node in gri_graph.nodes
+                 if gri_graph.nodes[node]['node_type'] == 'standard' and gri_graph.nodes[node]['drawn']])
+    max_x = max([gri_graph.nodes[node]['pos'][0] for node in gri_graph.nodes
+                 if gri_graph.nodes[node]['node_type'] == 'standard' and gri_graph.nodes[node]['drawn']])
+    max_y = max([gri_graph.nodes[node]['pos'][1] for node in gri_graph.nodes
+                 if gri_graph.nodes[node]['node_type'] == 'standard' and gri_graph.nodes[node]['drawn']])
     diff_x = - min_x
     diff_y = - min_y
 
-    for node in col_graph.nodes:
-        col_graph.nodes[node]['pos'] = (col_graph.nodes[node]['pos'][0] + diff_x,
-                                        col_graph.nodes[node]['pos'][1] + diff_y)
+    for node in gri_graph.nodes:
+        gri_graph.nodes[node]['pos'] = ((gri_graph.nodes[node]['pos'][0] + diff_x) / (max_x - min_x) * 300,
+                                        (gri_graph.nodes[node]['pos'][1] + diff_y) / (max_y - min_y) * 300)
 
     array_string = []
     for node in gri_graph.nodes:

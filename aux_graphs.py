@@ -33,7 +33,6 @@ def create_color_graph(grid_graph, scale):
 
     edge_widths = get_edge_labels()
 
-    l = 0
     for (x, y) in grid_graph.edges:
         if grid_graph.edges[x, y]['e_type'] not in ['sink', 'bend']:
             u = (x[0], x[1])

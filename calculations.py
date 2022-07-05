@@ -49,8 +49,8 @@ def get_lat_size():
     return l_max - l_min
 
 
-def calculate_paths(gri_graph, stops, rou_lists, stop_coods, point_routes, search_radius, bend_factor, geo_penalty, min_frac,
-                    threshold):
+def calculate_paths(gri_graph, stops, rou_lists, stop_coods, point_routes, search_radius, bend_factor, geo_penalty,
+                    min_frac, threshold):
 
     cnt = 0
 

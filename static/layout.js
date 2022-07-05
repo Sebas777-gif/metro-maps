@@ -1,193 +1,142 @@
 "use strict";
 
+let container = document.getElementById("layout");
+
+let VIEW_WIDTH = 340,
+    HEIGHT = VIEW_WIDTH,
+    WIDTH = VIEW_WIDTH;
+
+let LINK_WIDTH = 0.5;
+
+let nodes, links, node, link;
+
 function displayLayout(params) {
-    new Layout("layout", params);
-}
 
+    nodes = params["nodes"];
+    links = params["links"];
 
-class Layout {
-    constructor(layoutId, params) {
+    // Create an SVG container to hold the visualization
 
-        let container = document.getElementById(layoutId);
+    let svg = d3.select(container)
+        .append('svg')
+        .classed('layout-view', true)
+        .attr('viewBox', [-20, -20, WIDTH, HEIGHT]);
 
-        let that = this;
+    // Draw the links
 
-        let MARGIN = 20,
-            VIEW_WIDTH = Math.min(container.offsetHeight, container.offsetWidth) - 2 * MARGIN,
-            HEIGHT = VIEW_WIDTH,
-            WIDTH = VIEW_WIDTH;
+    links = links.map(d => {
+        let obj = {};
+        let source = nodes.filter(e => e.id === d.source)[0];
+        let target = nodes.filter(e => e.id === d.target)[0];
+        obj['source'] = source;
+        obj['target'] = target;
+        obj['color'] = d.color;
+        return obj;
+    });
 
-        this.LINK_WIDTH = 1;
+    prepareLinks();
 
-        this.nodes = params["nodes"];
-        this.links = params["links"];
+    let drag = d3.drag()
+        .on("drag", dragged)
+        .on("end", dragended);
 
-        let nodes = this.nodes.filter(d => d.size > 0)
-
-        let y = d3.scaleLinear()
-            .domain(d3.extent(nodes, d => d.y))
-            .range([HEIGHT - MARGIN, MARGIN]);
-
-        let x = d3.scaleLinear()
-            .domain(d3.extent(nodes, d => d.x))
-            .range([MARGIN, WIDTH - MARGIN]);
-
-        // Create an SVG container to hold the visualization
-
-        let svg = d3.select(container)
-            .append('svg')
-            .classed('example-svg', true)
-            .attr('width', WIDTH)
-            .attr('height', HEIGHT);
-
-        // Draw the links
-
-        let links = this.links.map(d => {
-            let obj = {};
-            let source = this.nodes.filter(e => e.id == d.source)[0];
-            let target = this.nodes.filter(e => e.id == d.target)[0];
-            obj['source'] = source;
-            obj['target'] = target;
-            obj['color'] = d.color;
-            return obj;
+    link = svg.selectAll('.link')
+        .data(links)
+        .enter()
+        .append('line')
+        .classed('link', true)
+        .attr('stroke-width', 1)
+        .style('stroke', d => d.color)
+        .attr('transform', d => {
+            let translation = calcTranslation(d.targetDistance, d.source, d.target);
+            return "translate(" + translation.dx + "," + translation.dy + ")";
         });
 
-        this.links = links;
+    // Draw the nodes
 
-        this.prepareLinks(this.LINK_WIDTH);
+    node = svg.selectAll('.node')
+        .data(nodes)
+        .enter()
+        .append('circle')
+        .classed('node', true)
+        .attr('r', d => d.size / 2)
 
-        console.log(links);
+    d3.forceSimulation()
+    .nodes(nodes)
+    .on("tick", tick);
 
-        let link = svg.selectAll('.link')
-            .data(links)
-            .enter()
-            .append('line')
-            .classed('link', true)
-            .attr('stroke-width', 3)
-            .style('stroke', d => d.color)
-            .attr('x1', d => x(d.source.x))
-            .attr('x2', d => x(d.target.x))
-            .attr('y1', d => y(d.source.y))
-            .attr('y2', d => y(d.target.y))
-            .attr('transform', d => {
-                let translation = this.calcTranslation(d.targetDistance, d.source, d.target);
-                return "translate(" + translation.dx + "," + translation.dy + ")";
-            });
+    node.call(drag);
+}
 
-        // Draw the nodes
+function tick() {
+    link
+        .attr('x1', d => d.source.x)
+        .attr('y1', d => d.source.y)
+        .attr('x2', d => d.target.x)
+        .attr('y2', d => d.target.y);
+    node
+        .attr('cx', d => d.x)
+        .attr('cy', d => d.y);
+}
 
-        let node = svg.selectAll('.node')
-            .data(this.nodes)
-            .enter()
-            .append('circle')
-            .classed('node', true)
-            .attr('r', d => d.size)
-            .attr('cx', d => x(d.x))
-            .attr('cy', d => y(d.y));
-
+/**
+ * @param {number} targetDistance
+ * @param {x, y} point0
+ * @param {x, y} point1, two points that define a line segment
+ * @returns
+ * a translation {dx, dy} from the given line segment, such that the distance between
+ * the given line segment and the translated line segment equals targetDistance
+ */
+function calcTranslation(targetDistance, point0, point1) {
+    let x1_x0 = point1.x - point0.x,
+        y1_y0 = point1.y - point0.y,
+        x2_x0, y2_y0;
+    if (y1_y0 === 0) {
+        x2_x0 = 0;
+        y2_y0 = targetDistance;
+    } else if (x1_x0 === 0) {
+        x2_x0 = - targetDistance;
+        y2_y0 = 0;
+    } else {
+        let angle = Math.atan(x1_x0 / y1_y0);
+        x2_x0 = - 2 * targetDistance * Math.cos(angle);
+        y2_y0 = 0;
     }
+    return {
+        dx: x2_x0,
+        dy: y2_y0
+    };
+}
 
-    /**
-     * @param {number} targetDistance
-     * @param {x, y} point0
-     * @param {x, y} point1, two points that define a line segment
-     * @returns
-     * a translation {dx, dy} from the given line segment, such that the distance between
-     * the given line segment and the translated line segment equals targetDistance
-     */
-    calcTranslation(targetDistance, point0, point1) {
-        let x1_x0 = point1.x - point0.x,
-            y1_y0 = point1.y - point0.y,
-            x2_x0, y2_y0;
-        if (y1_y0 === 0) {
-            x2_x0 = 0;
-            y2_y0 = targetDistance;
-        } else if (x1_x0 == 0) {
-            x2_x0 = - targetDistance;
-            y2_y0 = 0;
+/**
+ * @description
+ * Build an index to help handle the case of multiple links between two nodes
+ */
+function prepareLinks() {
+    let linksFromNodes = {};
+    links.forEach(function(val, idx) {
+        let sid = val.source.id,
+            tid = val.target.id,
+            key = (sid < tid ? sid + "," + tid : tid + "," + sid);
+        if (linksFromNodes[key] === undefined) {
+            linksFromNodes[key] = [idx];
+            val.multiIdx = 1;
         } else {
-            let angle = Math.atan(x1_x0 / y1_y0);
-            x2_x0 = - 2 * targetDistance * Math.cos(angle);
-            y2_y0 = 0;
+            val.multiIdx = linksFromNodes[key].push(idx);
         }
-        return {
-            dx: x2_x0,
-            dy: y2_y0
-        };
-    }
-
-    /**
-     * @description
-     * Build an index to help handle the case of multiple links between two nodes
-     */
-    prepareLinks(link_width) {
-        let that = this,
-            linksFromNodes = {};
-        this.links.forEach(function(val, idx) {
-            let sid = val.source.id,
-                tid = val.target.id,
-                key = (sid < tid ? sid + "," + tid : tid + "," + sid);
-                console.log(key);
-            if (linksFromNodes[key] === undefined) {
-                linksFromNodes[key] = [idx];
-                val.multiIdx = 1;
-            } else {
-                val.multiIdx = linksFromNodes[key].push(idx);
-            }
-            // Calculate target link distance, from the index in the multiple-links array:
-            // 1 -> 0, 2 -> 2, 3 -> -2, 4 -> 4, 5 -> -4, ...
-            val.targetDistance = (val.multiIdx % 2 === 0 ? val.multiIdx * link_width : (- val.multiIdx + 1) * link_width);
-        });
-    }
+        // Calculate target link distance, from the index in the multiple-links array:
+        // 1 -> 0, 2 -> 2, 3 -> -2, 4 -> 4, 5 -> -4, ...
+        val.targetDistance = (val.multiIdx % 2 === 0 ? val.multiIdx * LINK_WIDTH
+            : (- val.multiIdx + 1) * LINK_WIDTH);
+    });
 }
 
+function dragged(d) {
+    d.fx = d3.event.x;
+    d.fy = d3.event.y;
+}
 
-/*
-        // Create a force layout object
-
-        let force = d3.forceSimulation()
-            .nodes(this.nodes)
-            .force("link", d3.forceLink().id(link => link.id))
-            .force("center", d3.forceCenter(WIDTH / 2, WIDTH / 2))
-            .on("tick", tick)
-
-        let drag = d3
-            .drag()
-            .on("start", dragstart)
-
-        node.call(drag).on("click", click);
-
-        function tick() {
-            link.attr("x1", function (d) {
-                return d.source.x;
-            })
-                .attr("y1", function (d) {
-                    return d.source.y;
-                })
-                .attr("x2", function (d) {
-                    return d.target.x;
-                })
-                .attr("y2", function (d) {
-                    return d.target.y;
-                });
-
-            node.attr("cx", function (d) {
-                return d.x;
-            })
-                .attr("cy", function (d) {
-                    return d.y;
-                });
-        }
-
-        function click(event, d) {
-            delete d.fx;
-            delete d.fy;
-            d3.select(this).classed("fixed", false);
-            simulation.alpha(1).restart();
-        }
-
-        function dragstart() {
-            d3.select(this).classed("fixed", true);
-        }
-*/
-
+function dragended(d) {
+    d.fx = null;
+    d.fy = null;
+}
