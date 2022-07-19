@@ -1,6 +1,6 @@
 .idea/*
 __pycache__/*
-node_modulses/*
+node_modules/*
 *.pygtex
 *.pygstyle
 *.pickle

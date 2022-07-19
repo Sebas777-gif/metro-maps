@@ -274,7 +274,7 @@ def plot_graph(grids, geo_penalty, bend_factor, search_radius):
     for node in gri_graph.nodes:
         if gri_graph.nodes[node]['node_type'] == 'standard':
             node_string = {"id": str(node), "x": gri_graph.nodes[node]['pos'][0], "y": gri_graph.nodes[node]['pos'][1],
-                           "size": 3 if gri_graph.nodes[node]['drawn'] else 0}
+                           "size": 3 if gri_graph.nodes[node]['drawn'] else 0.1}
             array_string.append(node_string)
 
     links_string = []
