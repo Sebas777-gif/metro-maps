@@ -8,7 +8,7 @@ let VIEW_WIDTH = 340,
 
 let LINK_WIDTH = 0.5;
 
-let nodes, links, node, link;
+let nodes, links, node, link, force;
 
 function displayLayout(params) {
 
@@ -38,6 +38,7 @@ function displayLayout(params) {
 
     let drag = d3.drag()
         .on("drag", dragged)
+        .on("start", dragstarted)
         .on("end", dragended);
 
     link = svg.selectAll('.link')
@@ -61,7 +62,7 @@ function displayLayout(params) {
         .classed('node', true)
         .attr('r', d => d.size / 2)
 
-    d3.forceSimulation()
+    force = d3.forceSimulation()
     .nodes(nodes)
     .on("tick", tick);
 
@@ -138,7 +139,18 @@ function dragged(d) {
     d.fy = closest.y;
 }
 
+function dragstarted(d) {
+    if (!d3.event.active) {
+        force.alphaTarget(0.3).restart();
+    }
+    d.fx = d.x;
+    d.fy = d.y;
+}
+
 function dragended(d) {
+    if (!d3.event.active) {
+        force.alphaTarget(0);
+    }
     d.fx = null;
     d.fy = null;
 }
