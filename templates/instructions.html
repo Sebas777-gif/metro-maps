@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+
+<html lang="de">
+  <head>
+    <meta charset="UTF-8">
+    <title>Anleitung</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='layout.css') }}">
+  </head>
+  <body>
+    <main class="container">
+      <h1>Anleitung</h1>
+      <div class="textbox-left">
+        <h2>Warum Liniennetzpläne?</h2>
+        <p>Schematisierte Liniennetzpläne sind wichtig, um Visualisierungen von öffentlichen Verkehrsnetzen zu
+          erstellen, die einfach zu lesen sind und alle nötigen Informationen übermitteln. Das Layout, das mittlerweile
+          zum Standard geworden ist, ist ein sogenanntes oktilineares Design, welches horizontale, vertikale und
+          diagonale Liniensegmente verwendet. Es wurde 1931 von Harry Beck für die London Underground vorgeschlagen.</p>
+        <p>Diese Pläne werden auch heute noch manuell gezeichnet. Da die Netzstruktur sich regelmäßig ändern kann, ist
+          es von großem Interesse, diesen Prozess zu automatisieren.</p>
+      </div>
+      <div class="imgbox-right">
+        <img class="fit" src="https://tfl.gov.uk/cdn/static/cms/images/tube-map.gif" alt="Aktueller Plan der
+        London Underground">
+      </div>
+      <div class="textbox">
+        <h2>Zellen</h2>
+        <p>Die Anzahl der Zellen bestimmt die Feinheit des Gitters, auf dem Linien verlaufen können. Wird <em>N</em>
+          eingegeben, so entsteht ein <em>N</em>&times<em>N</em>-Gitter. Zu beachten ist, dass die Anzahl
+          aufgrund der Kollisionsbehandlung im Algorithmus größer wird.</p>
+      </div>
+      <div class="imgbox">
+        <figure class="part-fit">
+          <img class="smol-img" src="{{ url_for('static', filename='grid_6.png') }}" alt="Ein 6x6-Gitter.">
+          <figcaption>Ein 6&times6-Gitter.</figcaption>
+        </figure>
+        <figure class="part-fit">
+          <img class="smol-img" src="{{ url_for('static', filename='grid_24.png') }}" alt="Ein 24x24-Gitter.">
+          <figcaption>Ein 24&times24-Gitter.</figcaption>
+        </figure>
+      </div>
+    </main>
+  </body>
+</html>

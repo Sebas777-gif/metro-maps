@@ -18,9 +18,12 @@
         <input type="number" id="bend" name="bend" placeholder="1"><br>
         <label for="radius">Suchradius:</label><br>
         <input type="range" id="radius" name="radius" min="0" max="7" step="1.0" value="0"><br>
-        <input type="submit" name="calculate" value="Berechne Layout" formaction="{{ url_for('handle_data') }}">
+        <input type="submit" name="calculate" value="Berechne Layout" formaction="{{ url_for('handle_data') }}"><br>
         <input type="submit" name="show" value="Zeige Layout" formaction="{{ url_for('display_layout') }}">
       </form>
+      <a href="{{ url_for('instructions') }}">
+        <button>?</button>
+      </a>
     </main>
   </body>
 </html>

@@ -11,6 +11,11 @@ def home():
     return render_template("index.html")
 
 
+@app.route("/instructions")
+def instructions():
+    return render_template("instructions.html")
+
+
 @app.route("/handle_data", methods=['POST'])
 def handle_data():
     grids = int(request.form['grids'])

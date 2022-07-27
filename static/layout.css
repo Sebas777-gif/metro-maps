@@ -1,3 +1,8 @@
+* {
+  margin: 5px;
+  padding: 5px;
+}
+
 html, body {
   height: 1400px;
   width: 1400px;
@@ -19,4 +24,40 @@ html, body {
 .link {
     stroke-width: 1px;
     stroke: black;
+}
+
+.textbox {
+  display: grid;
+  width: 100%;
+}
+
+.textbox-left {
+  display: grid;
+  width: 46%;
+  float: left;
+}
+
+.imgbox {
+  display: grid;
+  width: 100%;
+}
+
+.imgbox-right {
+  display: grid;
+  width: 46%;
+  float: right;
+}
+
+.fit {
+  max-width: 100%;
+  max-height: 100vh;
+  margin: auto;
+}
+
+.part-fit {
+  margin: auto;
+}
+
+.smol-img {
+  width: 400px;
 }
