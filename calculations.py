@@ -35,6 +35,24 @@ def save_graphs(gri_graph, col_graph, search_radius, grids, bend_factor, geo_pen
                                 + 'geo' + str(geo_penalty) + '.pickle')
     nx.write_gpickle(col_graph, 'color_graph_s' + str(search_radius) + 'gr' + str(grids) + 'b' + str(bend_factor)
                                 + 'geo' + str(geo_penalty) + '.pickle')
+    node_entries = {}
+    for node in col_graph.nodes:
+        grid_node = str(col_graph.nodes[node]['gri_node'])
+        node_x = col_graph.nodes[node]['gri_node'][0]
+        node_y = col_graph.nodes[node]['gri_node'][1]
+        size = col_graph.nodes[node]['n_size'] + 0.1
+        node_entry = {"id": grid_node, "x": node_x, "y": node_y, "size": size}
+        node_entries[grid_node] = node_entry
+    with open('nodes.json', 'w') as outfile:
+        json.dump(list(node_entries.values()), outfile)
+    link_entries = []
+    for e in col_graph.edges:
+        src_node, tgt_node = e
+        src_entry = node_entries[str(col_graph.nodes[src_node]['gri_node'])]
+        tgt_entry = node_entries[str(col_graph.nodes[tgt_node]['gri_node'])]
+        link_entries.append({"source": src_entry, "target": tgt_entry, "color": col_graph.edges[e]['e_color']})
+    with open('links.json', 'w') as outfile:
+        json.dump(link_entries, outfile)
 
 
 def get_lon_size():
@@ -65,7 +83,7 @@ def calculate_paths(gri_graph, stops, rou_lists, stop_coods, point_routes, searc
                     grid_graph_copy.edges[st_node, (st_node[0], st_node[1], i)]['weight'] = 1250 * bend_factor
                     for j in range(1, 8 - i):
                         grid_graph_copy.edges[(st_node[0], st_node[1], i), (st_node[0], st_node[1], i + j)]['weight'] \
-                            = 1000 * bend_factor * abs(j - 4)
+                            = 1000 * bend_factor * (abs(j - 4) + 1)
 
         for m in range(len(rou_lists[rou]) - 1):
 
@@ -92,8 +110,8 @@ def calculate_paths(gri_graph, stops, rou_lists, stop_coods, point_routes, searc
             min_sp = nx.bidirectional_dijkstra(grid_graph_copy, source=st_node, target=nb_node, weight="weight")[1]
             min_length = nx.bidirectional_dijkstra(grid_graph_copy, source=st_node, target=nb_node, weight="weight")[0]
 
-            inaccuracy_penalty = 0
             for src in source_candidates:
+                inaccuracy_penalty = 0
                 if not st.is_settled():
                     for rout in point_routes[src]:
                         if st not in rou_lists[rout]:
@@ -101,18 +119,19 @@ def calculate_paths(gri_graph, stops, rou_lists, stop_coods, point_routes, searc
                     if rou in point_routes[src]:
                         inaccuracy_penalty += 1000
                 for tgt in target_candidates:
+                    tgt_inaccuracy_penalty = inaccuracy_penalty
                     if not nb.is_settled():
                         for rout in point_routes[tgt]:
                             if nb not in rou_lists[rout]:
-                                inaccuracy_penalty += 1000
+                                tgt_inaccuracy_penalty += 1000
                         if rou in point_routes[tgt]:
-                            inaccuracy_penalty += 1000
+                            tgt_inaccuracy_penalty += 1000
                     sp = nx.bidirectional_dijkstra(grid_graph_copy, source=src, target=tgt, weight="weight")[1]
                     length = nx.bidirectional_dijkstra(grid_graph_copy, source=src, target=tgt, weight="weight")[0]
                     penalty = geo_penalty * (math.sqrt((src[0] - st_node[0]) ** 2 + (src[1] - st_node[1]) ** 2)
                                              + math.sqrt((tgt[0] - nb_node[0]) ** 2 + (tgt[1] - nb_node[1]) ** 2))
-                    if length + penalty + inaccuracy_penalty < min_length:
-                        min_length = length + penalty + inaccuracy_penalty
+                    if length + penalty + tgt_inaccuracy_penalty < min_length:
+                        min_length = length + penalty + tgt_inaccuracy_penalty
                         final_src = src
                         final_tgt = tgt
                         min_sp = sp
@@ -144,7 +163,8 @@ def calculate_paths(gri_graph, stops, rou_lists, stop_coods, point_routes, searc
                     current_list = gri_graph.edges[node_1, node_2]['routes']
                     current_list += [rou]
                     gri_graph.edges[node_1, node_2]['routes'] = current_list
-                    grid_graph_copy.edges[node_1, node_2]['weight'] -= 0.005
+                    if grid_graph_copy.edges[node_1, node_2]['weight'] >= 0.005:
+                        grid_graph_copy.edges[node_1, node_2]['weight'] -= 0.005
 
             # close sinks
             for node in min_sp:
@@ -165,7 +185,7 @@ def calculate_paths(gri_graph, stops, rou_lists, stop_coods, point_routes, searc
                                     a <= i + j <= b) and i != a and i != b and i + j != a and i + j != b:
                                 gri_graph.edges[(min_sp[k][0], min_sp[k][1], i),
                                                 (min_sp[k][0], min_sp[k][1], i + j)]['weight'] \
-                                    = 100 * bend_factor * abs(j - 4)
+                                    = 100 * bend_factor * (abs(j - 4) + 1)
 
             # settle stops, re-open sinks
             st.settle()
@@ -175,7 +195,7 @@ def calculate_paths(gri_graph, stops, rou_lists, stop_coods, point_routes, searc
                 grid_graph_copy.edges[st_node, (st_node[0], st_node[1], i)]['weight'] = 1250 * bend_factor
                 for j in range(1, 8 - i):
                     grid_graph_copy.edges[(st_node[0], st_node[1], i), (st_node[0], st_node[1], i + j)]['weight'] \
-                        = 1000 * bend_factor * abs(j - 4)
+                        = 1000 * bend_factor * (abs(j - 4) + 1)
 
             if not nb.is_settled():
                 nb_node = nb.get_coods()
