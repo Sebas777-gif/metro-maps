@@ -71,7 +71,6 @@ def calculate_paths(gri_graph, stops, rou_lists, stop_coods, point_routes, searc
                     min_frac, threshold):
 
     cnt = 0
-
     for rou in rou_lists.keys():
 
         grid_graph_copy = copy.deepcopy(gri_graph)
@@ -181,8 +180,7 @@ def calculate_paths(gri_graph, stops, rou_lists, stop_coods, point_routes, searc
                         a, b = b, a
                     for i in range(8):
                         for j in range(1, 8 - i):
-                            if (a <= i <= b) != (
-                                    a <= i + j <= b) and i != a and i != b and i + j != a and i + j != b:
+                            if (a <= i <= b) != (a <= i + j <= b) and i != a and i != b and i + j != a and i + j != b:
                                 gri_graph.edges[(min_sp[k][0], min_sp[k][1], i),
                                                 (min_sp[k][0], min_sp[k][1], i + j)]['weight'] \
                                     = 100 * bend_factor * (abs(j - 4) + 1)
@@ -210,6 +208,7 @@ def calculate_paths(gri_graph, stops, rou_lists, stop_coods, point_routes, searc
 
 
 def get_candidates(grid_graph, stops, st, neighbor, st_node, nb_node, search_radius, min_frac, threshold):
+
     source_candidates = [st_node]
     target_candidates = [nb_node]
 
