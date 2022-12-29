@@ -47,7 +47,7 @@ def setup_grid_graph(stations, lines, stop_labels, scale, lon_size, lat_size, be
         if line[0][1] == line[1][1]:
             for (p_1, p_2) in zip(points[line], points[line][1:]):
                 grid_graph.add_edge((p_1[0], p_1[1], 2), (p_2[0], p_2[1], 6), weight=p_2[0] - p_1[0], routes=[],
-                                    alt_weight=p_2[0] - p_1[0], e_type='h')
+                                    rou_lines=[], alt_weight=p_2[0] - p_1[0], e_type='h')
 
                 grid_graph.nodes[p_1]['neighbor_e'] = p_2
                 grid_graph.nodes[p_2]['neighbor_w'] = p_1
@@ -55,7 +55,7 @@ def setup_grid_graph(stations, lines, stop_labels, scale, lon_size, lat_size, be
         elif line[0][0] == line[1][0]:
             for (p_1, p_2) in zip(points[line], points[line][1:]):
                 grid_graph.add_edge((p_1[0], p_1[1], 4), (p_2[0], p_2[1], 0), weight=p_2[1] - p_1[1], routes=[],
-                                    alt_weight=p_2[1] - p_1[1], e_type='v')
+                                    rou_lines=[], alt_weight=p_2[1] - p_1[1], e_type='v')
 
                 grid_graph.nodes[p_1]['neighbor_s'] = p_2
                 grid_graph.nodes[p_2]['neighbor_n'] = p_1
@@ -63,7 +63,7 @@ def setup_grid_graph(stations, lines, stop_labels, scale, lon_size, lat_size, be
         elif line[1][1] - line[0][1] == -1:
             for (p_1, p_2) in zip(points[line], points[line][1:]):
                 length = math.sqrt((p_2[0] - p_1[0]) ** 2 + (p_2[1] - p_1[1]) ** 2)
-                grid_graph.add_edge((p_1[0], p_1[1], 1), (p_2[0], p_2[1], 5), weight=length, routes=[],
+                grid_graph.add_edge((p_1[0], p_1[1], 1), (p_2[0], p_2[1], 5), weight=length, routes=[], rou_lines=[],
                                     alt_weight=length, e_type='d2')
 
                 grid_graph.nodes[p_1]['neighbor_ne'] = p_2
@@ -72,7 +72,7 @@ def setup_grid_graph(stations, lines, stop_labels, scale, lon_size, lat_size, be
         else:
             for (p_1, p_2) in zip(points[line], points[line][1:]):
                 length = math.sqrt((p_2[0] - p_1[0]) ** 2 + (p_2[1] - p_1[1]) ** 2)
-                grid_graph.add_edge((p_1[0], p_1[1], 3), (p_2[0], p_2[1], 7), weight=length, routes=[],
+                grid_graph.add_edge((p_1[0], p_1[1], 3), (p_2[0], p_2[1], 7), weight=length, routes=[], rou_lines=[],
                                     alt_weight=length, e_type='d1')
 
                 grid_graph.nodes[p_1]['neighbor_se'] = p_2

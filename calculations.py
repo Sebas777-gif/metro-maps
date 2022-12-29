@@ -6,7 +6,7 @@ import os
 import json
 
 from collections import OrderedDict
-from aux_graphs import create_line_graph, create_color_graph
+from aux_graphs import create_line_graph
 from grid_graph import setup_grid_graph
 from stops_class import Stop
 
@@ -30,29 +30,9 @@ stops = pd.read_csv("stops.txt")
 agency_stops = stops[stops['stop_id'].isin(agency_stop_ids)]
 
 
-def save_graphs(gri_graph, col_graph, search_radius, grids, bend_factor, geo_penalty):
+def save_graphs(gri_graph, search_radius, grids, bend_factor, geo_penalty):
     nx.write_gpickle(gri_graph, 'grid_graph_s' + str(search_radius) + 'gr' + str(grids) + 'b' + str(bend_factor)
                                 + 'geo' + str(geo_penalty) + '.pickle')
-    nx.write_gpickle(col_graph, 'color_graph_s' + str(search_radius) + 'gr' + str(grids) + 'b' + str(bend_factor)
-                                + 'geo' + str(geo_penalty) + '.pickle')
-    node_entries = {}
-    for node in col_graph.nodes:
-        grid_node = str(col_graph.nodes[node]['gri_node'])
-        node_x = col_graph.nodes[node]['gri_node'][0]
-        node_y = col_graph.nodes[node]['gri_node'][1]
-        size = col_graph.nodes[node]['n_size'] + 0.1
-        node_entry = {"id": grid_node, "x": node_x, "y": node_y, "size": size}
-        node_entries[grid_node] = node_entry
-    with open('nodes.json', 'w') as outfile:
-        json.dump(list(node_entries.values()), outfile)
-    link_entries = []
-    for e in col_graph.edges:
-        src_node, tgt_node = e
-        src_entry = node_entries[str(col_graph.nodes[src_node]['gri_node'])]
-        tgt_entry = node_entries[str(col_graph.nodes[tgt_node]['gri_node'])]
-        link_entries.append({"source": src_entry, "target": tgt_entry, "color": col_graph.edges[e]['e_color']})
-    with open('links.json', 'w') as outfile:
-        json.dump(link_entries, outfile)
 
 
 def get_lon_size():
@@ -68,7 +48,7 @@ def get_lat_size():
 
 
 def calculate_paths(gri_graph, stops, rou_lists, stop_coods, point_routes, search_radius, bend_factor, geo_penalty,
-                    min_frac, threshold):
+                    min_frac, threshold, new_routes):
 
     cnt = 0
     for rou in rou_lists.keys():
@@ -161,9 +141,12 @@ def calculate_paths(gri_graph, stops, rou_lists, stop_coods, point_routes, searc
                     point_routes[(node_1[0], node_1[1])] = point_routes[(node_1[0], node_1[1])] + [rou]
                     current_list = gri_graph.edges[node_1, node_2]['routes']
                     current_list += [rou]
+                    new_routes[rou].append(node_1)
                     gri_graph.edges[node_1, node_2]['routes'] = current_list
                     if grid_graph_copy.edges[node_1, node_2]['weight'] >= 0.005:
                         grid_graph_copy.edges[node_1, node_2]['weight'] -= 0.005
+
+            new_routes[rou].append(min_sp[-1])
 
             # close sinks
             for node in min_sp:
@@ -383,30 +366,17 @@ def calculate(grids, search_radius, bend_factor, geo_penalty):
             routes_of_pairs[(labels_of_ids[stop_1.get_id()], labels_of_ids[stop_2.get_id()])].append(route)
 
     point_routes = {x: [] for x in grid_graph.nodes if grid_graph.nodes[x]['node_type'] == 'standard'}
+    new_routes = {rou_id[3:5]: [] for rou_id in agency_route_ids}
+
 
     grid_graph = calculate_paths(grid_graph, stops, route_lists, stop_coods, point_routes, search_radius, bend_factor,
-                                 geo_penalty, min_frac, THRESHOLD)
+                                 geo_penalty, min_frac, THRESHOLD, new_routes)
 
     route_lists_strings = {rou_id[3:5]: [] for rou_id in agency_route_ids}
+
     for rou_id in agency_route_ids:
-
-        trip_ids = agency_trips[agency_trips.route_id == rou_id].trip_id.tolist()
-        cons_route_string = []
-        route_trips_strings = []
-
-        for trip_id in trip_ids:
-            route_stops = agency_stop_times[agency_stop_times.trip_id == trip_id]
-            trip_strings = []
-            for stop in route_stops["stop_id"].values:
-                trip_strings.append(str(stop_coods[stop][0]) + ',' + str(stop_coods[stop][1]))
-            route_trips_strings.append(trip_strings)
-
-        route_trips_strings.sort(key=len, reverse=True)
-        if route_trips_strings:
-            cons_route_string = route_trips_strings[0]
-
-        if len(cons_route_string) > len(route_lists_strings[rou_id[3:5]]):
-            route_lists_strings[rou_id[3:5]] = cons_route_string
+        for stop in new_routes[rou_id[3:5]]:
+            route_lists_strings[rou_id[3:5]].append(str(stop[0]) + ',' + str(stop[1]))
 
     route_lists_strings = OrderedDict(sorted(route_lists_strings.items(), key=lambda li: len(li[1]), reverse=True))
 
@@ -438,11 +408,10 @@ def calculate(grids, search_radius, bend_factor, geo_penalty):
             grid_graph.nodes[x]['block_se'] += len(set(grid_graph.edges[u, v]['routes']))
             grid_graph.nodes[y]['block_nw'] += len(set(grid_graph.edges[u, v]['routes']))
 
-    color_graph = create_color_graph(grid_graph, SCALE)
     skel_graph = create_line_graph(grid_graph)
 
     geo_dists = geodesic_dists(grid_graph, stops, skel_graph)
     for st in [st for st in stops.keys() if grid_graph.nodes[st]['drawn']]:
         grid_graph.nodes[st]['geo_dist'] = geo_dists[st]
 
-    save_graphs(grid_graph, color_graph, search_radius, orig_grids, bend_factor, geo_penalty)
+    save_graphs(grid_graph, search_radius, orig_grids, bend_factor, geo_penalty)

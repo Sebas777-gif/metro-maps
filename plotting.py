@@ -2,6 +2,9 @@ import networkx as nx
 import numpy as np
 import os
 import math
+import json
+
+from aux_graphs import create_colors
 
 
 LINE_WIDTH = 0.1
@@ -243,17 +246,152 @@ def optimize_consistency(grid_graph, straight_lines):
         print("Linie {} von {} optimiert.".format(i, len(straight_lines)))
 
 
+def sort_lines(grid_graph, route_lists):
+    orders = {e: [] for e in grid_graph.edges if grid_graph.edges[e]['e_type'] in ['h', 'v', 'd1', 'd2']
+              and grid_graph.edges[e]['routes']}
+    # Phase 1
+    right_side = {}
+    for id1 in route_lists.keys():
+        for id2 in route_lists.keys():
+            if id1 != id2:
+                l1 = route_lists[id1]
+                l2 = route_lists[id2]
+                lambd = max_common_subpaths(l1, l2)
+                for p in lambd:
+                    v = p[-1]
+                    i = l1.index(v)
+                    j = l2.index(v)
+                    dirc = get_dir(convert_string(p[-2]), convert_string(p[-1]))
+                    if i < len(l1) - 1 and (j < len(l2) - 1 and is_right_of(l1[i+1], l2[j+1], dirc)
+                                            or (j == len(l2) - 1 and is_right_of(l1[i], l2[j], dirc))):
+                        for st1, st2 in zip(p, p[1:]):
+                            right_side[(id1, id2, st1, st2)] = False
+                            right_side[(id2, id1, st1, st2)] = False
+                            right_side[(id1, id2, st2, st1)] = True
+                            right_side[(id2, id1, st2, st1)] = True
+                    else:
+                        for st1, st2 in zip(p, p[1:]):
+                            right_side[(id1, id2, st1, st2)] = True
+                            right_side[(id2, id1, st1, st2)] = True
+                            right_side[(id1, id2, st2, st1)] = False
+                            right_side[(id2, id1, st2, st1)] = False
+    # Phase 2
+    for r_id in route_lists.keys():
+        l = route_lists[r_id]
+        v = l[0]
+        w = l[1]
+        start = 1
+        while start < len(l) - 1 and not (convert_string(v), convert_string(w)) in grid_graph.edges:
+            v = l[start]
+            w = l[start+1]
+            start += 1
+        if start == len(l) - 1:
+            break
+        e = grid_graph.edges[convert_string(v), convert_string(w)]
+        if [id3 for id3 in orders[e] if id3 != r_id and right_side[r_id, id3, v, w]]:
+            id2 = [id3 for id3 in orders[e] if id3 != r_id and right_side[r_id, id3, v, w]][-1]
+            i = orders[e].index(id2)
+            orders[e].insert(i, r_id)
+        else:
+            orders[e].append(r_id)
+        for i in range(start, len(l) - 1):
+            v = l[i]
+            w = l[i+1]
+            if not (convert_string(v), convert_string(w)) in grid_graph.edges:
+                continue
+            e = grid_graph.edges[convert_string(v), convert_string(w)]
+            scan_lines = []
+            for id3 in orders[e]:
+                l3 = route_lists[id3]
+                i3 = l3.index(v)
+                u = l3[i3 - 1]
+                dirc = get_dir(convert_string(v), convert_string(w))
+                if is_right_of(v, u, dirc) and is_right_of(w, v, dirc):
+                    scan_lines.append(id3)
+            if scan_lines:
+                id2 = scan_lines[0]
+                i = orders[e].index(id2)
+                orders[e].insert(i - 1, r_id)
+            else:
+                orders[e].insert(0, r_id)
+        for i in range(start, len(l) - 1):
+            v = l[i]
+            w = l[i+1]
+            if not (convert_string(v), convert_string(w)) in grid_graph.edges:
+                continue
+            e = grid_graph.edges[convert_string(v), convert_string(w)]
+            e_rev = grid_graph.edges[convert_string(w), convert_string(v)]
+            if [id3 for id3 in orders[e] if (r_id, id3, v, w) in right_side.keys()
+                                               and not right_side[r_id, id3, v, w]]:
+                ll = [id3 for id3 in orders[e] if (r_id, id3, v, w) in right_side.keys()
+                                               and not right_side[r_id, id3, v, w]][0]
+                if ll in orders[e_rev]:
+                    ll_index = orders[e_rev].index(ll)
+                else:
+                    ll_index = len(orders[e_rev]) - 1
+            else:
+                ll_index = len(orders[e_rev]) - 1
+            if [id3 for id3 in orders[e] if (r_id, id3, v, w) in right_side.keys()
+                                               and not right_side[r_id, id3, v, w]]:
+                lr = [id3 for id3 in orders[e] if (r_id, id3, v, w) in right_side.keys()
+                                               and not right_side[r_id, id3, v, w]][-1]
+                if lr in orders[e_rev]:
+                    lr_index = orders[e_rev].index(lr)
+                else:
+                    lr_index = 0
+            else:
+                lr_index = 0
+            if [id3 for id3 in orders[e_rev] if (r_id, id3, w, v) in right_side.keys()
+                                               and lr_index <= orders[e_rev].index(id3) <= ll_index
+                                               and right_side[r_id, id3, w, v]]:
+                id2 = [id3 for id3 in orders[e_rev] if (r_id, id3, w, v) in right_side.keys()
+                       and lr_index <= orders[e_rev].index(id3) <= ll_index and right_side[r_id, id3, w, v]][0]
+                i = orders[e_rev].index(id2)
+                orders[e_rev].insert(i, r_id)
+            else:
+                orders[e_rev].append(r_id)
+    for e in [e for e in grid_graph.edges if grid_graph.edges[e]['e_type'] in ['h', 'v', 'd1', 'd2']
+                                             and grid_graph.edges[e]['routes']]:
+        grid_graph.edges[e]['routes'] = orders[e]
+
+def max_common_subpaths(l1, l2):
+    subpaths = [[]]
+    for v, w in zip(l1, l1[1:]):
+        if (v, w) in zip(l2, l2[1:]):
+            if not subpaths[-1]:
+                subpaths[-1].append(v)
+            subpaths[-1].append(w)
+        else:
+            subpaths.append([])
+    subpaths = [p for p in subpaths if len(p) > 1]
+    return subpaths
+
+
+def is_right_of(st1, st2, dirc):
+    x1, y1 = convert_string(st1)
+    x2, y2 = convert_string(st2)
+    if dirc == 0:
+        return x1 > x2
+    elif dirc == 1:
+        return x1 > x2 or y1 > y2
+    elif dirc == 2:
+        return y1 > y2
+    elif dirc == 3:
+        return x1 < x2 or y1 > y2
+    elif dirc == 4:
+        return x1 < x2
+    elif dirc == 5:
+        return x1 < x2 or y1 < y2
+    elif dirc == 6:
+        return y1 < y2
+    else:
+        return x1 > x2 or y1 < y2
+
+
 def plot_graph(grids, geo_penalty, bend_factor, search_radius):
 
     gri_graph = nx.read_gpickle('grid_graph_s' + str(search_radius) + 'gr' + str(grids) + 'b' + str(bend_factor)
                                 + 'geo' + str(geo_penalty) + '.pickle')
-    col_graph = nx.read_gpickle('color_graph_s' + str(search_radius) + 'gr' + str(grids) + 'b' + str(bend_factor)
-                                + 'geo' + str(geo_penalty) + '.pickle')
-
-    edges_full = [e for e in col_graph.edges if col_graph.edges[e]['e_style'] == '']
-    edges_dash = [e for e in col_graph.edges if col_graph.edges[e]['e_style'] == 'dash']
-    edges_dot = [e for e in col_graph.edges if col_graph.edges[e]['e_style'] == 'dot']
-    edges_dashdot = [e for e in col_graph.edges if col_graph.edges[e]['e_style'] == 'dashdot']
 
     min_x = min([gri_graph.nodes[node]['pos'][0] for node in gri_graph.nodes
                  if gri_graph.nodes[node]['node_type'] == 'standard' and gri_graph.nodes[node]['drawn']])
@@ -273,31 +411,33 @@ def plot_graph(grids, geo_penalty, bend_factor, search_radius):
     array_string = []
     for node in gri_graph.nodes:
         if gri_graph.nodes[node]['node_type'] == 'standard':
-            node_string = {"id": str(node), "x": gri_graph.nodes[node]['pos'][0], "y": gri_graph.nodes[node]['pos'][1],
+            node_string = {"id": "{0:g},{1:g}".format(node[0], node[1]),
+                           "x": gri_graph.nodes[node]['pos'][0], "y": gri_graph.nodes[node]['pos'][1],
                            "size": 3 if gri_graph.nodes[node]['drawn'] else 0.1}
             array_string.append(node_string)
 
+    with open('route_lists_s' + str(search_radius) + 'gr' + str(grids) + 'b' + str(bend_factor) + 'geo' +
+              str(geo_penalty) + '.json') as json_file:
+        route_lists = json.load(json_file)
+
+    colors = create_colors(route_lists)
+    sort_lines(gri_graph, route_lists)
+
     links_string = []
-    for edge in edges_full:
-        edge_string = {"source": str(col_graph.nodes[edge[0]]['gri_node']),
-                       "target": str(col_graph.nodes[edge[1]]['gri_node']),
-                       "color": col_graph.edges[edge]['e_color'], "dtype": 0}
-        links_string.append(edge_string)
-    for edge in edges_dash:
-        edge_string = {"source": str(col_graph.nodes[edge[0]]['gri_node']),
-                       "target": str(col_graph.nodes[edge[1]]['gri_node']),
-                       "color": col_graph.edges[edge]['e_color'], "dtype": 1}
-        links_string.append(edge_string)
-    for edge in edges_dot:
-        edge_string = {"source": str(col_graph.nodes[edge[0]]['gri_node']),
-                       "target": str(col_graph.nodes[edge[1]]['gri_node']),
-                       "color": col_graph.edges[edge]['e_color'], "dtype": 2}
-        links_string.append(edge_string)
-    for edge in edges_dashdot:
-        edge_string = {"source": str(col_graph.nodes[edge[0]]['gri_node']),
-                       "target": str(col_graph.nodes[edge[1]]['gri_node']),
-                       "color": col_graph.edges[edge]['e_color'], "dtype": 3}
-        links_string.append(edge_string)
+    for edge in [e for e in gri_graph.edges if gri_graph.edges[e]['e_type'] in ['h', 'v', 'd1', 'd2']
+                                               and gri_graph.edges[e]['routes']]:
+        for rou in gri_graph.edges[edge]['routes']:
+            color, style = colors[rou]
+            if style == '':
+                dtype = 0
+            elif style == 'dash':
+                dtype = 1
+            elif style == 'dot':
+                dtype = 2
+            else:
+                dtype = 3
+            edge_string = {"source": edge[0], "target": edge[1], "color": color, "dtype": dtype}
+            links_string.append(edge_string)
 
     params = {"nodes": array_string, "links": links_string}
 
