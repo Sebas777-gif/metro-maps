@@ -7,6 +7,10 @@ def create_line_graph(grid_graph):
 
     line_graph = nx.Graph()
 
+    for x in grid_graph.nodes:
+        line_graph.add_node((x[0], x[1]))
+        line_graph.nodes[(x[0], x[1])]['orig_node'] = x
+
     for (x, y) in grid_graph.edges:
         if grid_graph.edges[x, y]['e_type'] not in ['sink', 'bend'] and grid_graph.edges[x, y]['routes']:
             u = (x[0], x[1])

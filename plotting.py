@@ -5,6 +5,7 @@ import math
 import json
 
 from aux_graphs import create_colors
+from aux_graphs import create_line_graph
 
 
 LINE_WIDTH = 0.1
@@ -247,8 +248,10 @@ def optimize_consistency(grid_graph, straight_lines):
 
 
 def sort_lines(grid_graph, route_lists):
-    orders = {e: [] for e in grid_graph.edges if grid_graph.edges[e]['e_type'] in ['h', 'v', 'd1', 'd2']
-              and grid_graph.edges[e]['routes']}
+    line_graph = create_line_graph(grid_graph)
+    orders = {(e[0], e[1]): [] for e in line_graph.edges}
+    for e in line_graph.edges:
+        orders[e[1], e[0]] = []
     # Phase 1
     right_side = {}
     for id1 in route_lists.keys():
@@ -281,25 +284,27 @@ def sort_lines(grid_graph, route_lists):
         v = l[0]
         w = l[1]
         start = 1
-        while start < len(l) - 1 and not (convert_string(v), convert_string(w)) in grid_graph.edges:
+        while start < len(l) - 1 and not (convert_string(v), convert_string(w)) in line_graph.edges:
             v = l[start]
             w = l[start+1]
             start += 1
         if start == len(l) - 1:
             break
-        e = grid_graph.edges[convert_string(v), convert_string(w)]
+        e = (convert_string(v), convert_string(w))
         if [id3 for id3 in orders[e] if id3 != r_id and right_side[r_id, id3, v, w]]:
             id2 = [id3 for id3 in orders[e] if id3 != r_id and right_side[r_id, id3, v, w]][-1]
             i = orders[e].index(id2)
-            orders[e].insert(i, r_id)
+            if not r_id in orders[e]:
+                orders[e].insert(i, r_id)
         else:
-            orders[e].append(r_id)
+            if not r_id in orders[e]:
+                orders[e].append(r_id)
         for i in range(start, len(l) - 1):
             v = l[i]
             w = l[i+1]
-            if not (convert_string(v), convert_string(w)) in grid_graph.edges:
+            if not (convert_string(v), convert_string(w)) in line_graph.edges:
                 continue
-            e = grid_graph.edges[convert_string(v), convert_string(w)]
+            e = (convert_string(v), convert_string(w))
             scan_lines = []
             for id3 in orders[e]:
                 l3 = route_lists[id3]
@@ -311,16 +316,18 @@ def sort_lines(grid_graph, route_lists):
             if scan_lines:
                 id2 = scan_lines[0]
                 i = orders[e].index(id2)
-                orders[e].insert(i - 1, r_id)
+                if not r_id in orders[e]:
+                    orders[e].insert(i - 1, r_id)
             else:
-                orders[e].insert(0, r_id)
+                if not r_id in orders[e]:
+                    orders[e].insert(0, r_id)
         for i in range(start, len(l) - 1):
             v = l[i]
             w = l[i+1]
-            if not (convert_string(v), convert_string(w)) in grid_graph.edges:
+            if not (convert_string(v), convert_string(w)) in line_graph.edges:
                 continue
-            e = grid_graph.edges[convert_string(v), convert_string(w)]
-            e_rev = grid_graph.edges[convert_string(w), convert_string(v)]
+            e = (convert_string(v), convert_string(w))
+            e_rev = (convert_string(w), convert_string(v))
             if [id3 for id3 in orders[e] if (r_id, id3, v, w) in right_side.keys()
                                                and not right_side[r_id, id3, v, w]]:
                 ll = [id3 for id3 in orders[e] if (r_id, id3, v, w) in right_side.keys()
@@ -347,12 +354,14 @@ def sort_lines(grid_graph, route_lists):
                 id2 = [id3 for id3 in orders[e_rev] if (r_id, id3, w, v) in right_side.keys()
                        and lr_index <= orders[e_rev].index(id3) <= ll_index and right_side[r_id, id3, w, v]][0]
                 i = orders[e_rev].index(id2)
-                orders[e_rev].insert(i, r_id)
+                if not r_id in orders[e_rev]:
+                    orders[e_rev].insert(i, r_id)
             else:
-                orders[e_rev].append(r_id)
-    for e in [e for e in grid_graph.edges if grid_graph.edges[e]['e_type'] in ['h', 'v', 'd1', 'd2']
-                                             and grid_graph.edges[e]['routes']]:
-        grid_graph.edges[e]['routes'] = orders[e]
+                if not r_id in orders[e_rev]:
+                    orders[e_rev].append(r_id)
+    for e in line_graph.edges:
+        line_graph.edges[e]['routes'] = orders[e[0], e[1]]
+    return line_graph
 
 def max_common_subpaths(l1, l2):
     subpaths = [[]]
@@ -411,7 +420,7 @@ def plot_graph(grids, geo_penalty, bend_factor, search_radius):
     array_string = []
     for node in gri_graph.nodes:
         if gri_graph.nodes[node]['node_type'] == 'standard':
-            node_string = {"id": "{0:g},{1:g}".format(node[0], node[1]),
+            node_string = {"id": (node[0], node[1]),
                            "x": gri_graph.nodes[node]['pos'][0], "y": gri_graph.nodes[node]['pos'][1],
                            "size": 3 if gri_graph.nodes[node]['drawn'] else 0.1}
             array_string.append(node_string)
@@ -421,12 +430,12 @@ def plot_graph(grids, geo_penalty, bend_factor, search_radius):
         route_lists = json.load(json_file)
 
     colors = create_colors(route_lists)
-    sort_lines(gri_graph, route_lists)
+
+    line_graph = sort_lines(gri_graph, route_lists)
 
     links_string = []
-    for edge in [e for e in gri_graph.edges if gri_graph.edges[e]['e_type'] in ['h', 'v', 'd1', 'd2']
-                                               and gri_graph.edges[e]['routes']]:
-        for rou in gri_graph.edges[edge]['routes']:
+    for edge in line_graph.edges:
+        for rou in line_graph.edges[edge]['routes']:
             color, style = colors[rou]
             if style == '':
                 dtype = 0
@@ -436,10 +445,18 @@ def plot_graph(grids, geo_penalty, bend_factor, search_radius):
                 dtype = 2
             else:
                 dtype = 3
-            edge_string = {"source": edge[0], "target": edge[1], "color": color, "dtype": dtype}
-            links_string.append(edge_string)
+            src = line_graph.nodes[edge[0]]['orig_node']
+            tgt = line_graph.nodes[edge[1]]['orig_node']
+            if (src[0], src[1]) in [v for v in gri_graph.nodes if gri_graph.nodes[v]['node_type'] == 'standard'] and\
+                    (tgt[0], tgt[1]) in [v for v in gri_graph.nodes if gri_graph.nodes[v]['node_type'] == 'standard']:
+                edge_string = {"source": (src[0], src[1]), "target": (tgt[0], tgt[1]),
+                               "srcx": gri_graph.nodes[src]['pos'][0], "srcy": gri_graph.nodes[src]['pos'][1],
+                               "tgtx": gri_graph.nodes[tgt]['pos'][0], "tgty": gri_graph.nodes[tgt]['pos'][1],
+                               "color": color, "dtype": dtype}
+                links_string.append(edge_string)
 
     params = {"nodes": array_string, "links": links_string}
+
 
     """
     node_list = sorted([node for node in grid_graph.nodes if grid_graph.nodes[node]['geo_dist'] >= 0
