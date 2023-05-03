@@ -12,30 +12,11 @@ In particular, the data of the _Stadtbus Ravensburg Weingarten_ (town bus of Rav
 
 ## Running the calculations
 
-Extract the zipped GTFS data into the folder `gtfs`. Then run the following command:
+Extract the zipped GTFS data into the folder `gtfs/rab`. Then run the following command:
 
 ```
-python -m main $GRIDS $SCALE $SEARCH_RADIUS $BEND_FACTOR $GEO_PENALTY
+python main.py
 ```
 
-The resulting grid graph and color graph are then stored in a `pickle` file.
-
-The parameters do the following:
-
-* `GRIDS`: Number of cells used in the base grid.
-* `SCALE`: Relevant for plotting. Higher numbers mean larger pictures.
-* `SEARCH_RADIUS`: The search radius in the optimization step. Higher numbers should theoretically lead to better results, but runtime inreases exponentially.
-* `BEND_FACTOR`: All bend penalties are multiplied by this factor.
-* `GEO_PENALTY`: All geographical penalties are multiplied by this factor.
-
-The last two parameters in combination can be used to prefer geographically more accurate or more abstract drawings with smoother lines.
-
-## Plotting
-
-In the plotting step, the `pickle` files are read in and the result image is plotted. Alongside, a second image is plotted with the Hanan grid visible in the background. To run the step, execute
-
-```
-python plotting.py $GRIDS $SCALE $SEARCH_RADIUS $BEND_FACTOR $GEO_PENALTY
-```
-
-The parameters are necessary again so that the image can be saved with an appropriate file name.
+Running the calculations and viewing the plotting are possible via a web interface which should be self-explanatory.
+Explanations for the parameters can be found on the tutorial page.
