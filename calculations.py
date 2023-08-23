@@ -10,7 +10,7 @@ from aux_graphs import create_line_graph, create_color_graph
 from grid_graph import setup_grid_graph
 from stops_class import Stop
 
-
+# beginning read data from files
 ROOT_DIR = os.path.dirname(os.path.abspath(__file__))
 os.chdir(os.path.join(ROOT_DIR, 'gtfs'))
 routes = pd.read_csv("routes.txt")
@@ -28,13 +28,30 @@ agency_stop_ids = agency_stop_times.stop_id.tolist()
 
 stops = pd.read_csv("stops.txt")
 agency_stops = stops[stops['stop_id'].isin(agency_stop_ids)]
+# end read data from files
 
 
 def save_graphs(gri_graph, col_graph, search_radius, grids, bend_factor, geo_penalty):
+    """
+    This method is intended for saving a generated graph.
+    The graph will be saved as two JSON files, as well as a pickle file.
+    The filename is a mix of the parameters used for generating the graph.
+    The JSON files are not used for plotting the graph and appear superfluous.
+
+    :param gri_graph: finished grid graph to be saved
+    :param col_graph: finished colored grid graph to be saved
+    :param search_radius: search radius parameter explained in the calculate method, used here for generating filename
+    :param grids: grids parameter of the saved graph explained in the calculate method, used here for generating filename
+    :param bend_factor: bend_factor parameter of the saved graph explained in the calculate method, used here for generating filename
+    :param geo_penalty: geo_penalty parameter of the saved graph explained in the calculate method, used here for generating filename
+    :return: this method doesn't have a return value, it only writes results to a file
+    """
+    # begin saving as pickle file
     nx.write_gpickle(gri_graph, 'grid_graph_s' + str(search_radius) + 'gr' + str(grids) + 'b' + str(bend_factor)
                                 + 'geo' + str(geo_penalty) + '.pickle')
     nx.write_gpickle(col_graph, 'color_graph_s' + str(search_radius) + 'gr' + str(grids) + 'b' + str(bend_factor)
                                 + 'geo' + str(geo_penalty) + '.pickle')
+    # end saving as pickle file
     node_entries = {}
     for node in col_graph.nodes:
         grid_node = str(col_graph.nodes[node]['gri_node'])
@@ -56,12 +73,22 @@ def save_graphs(gri_graph, col_graph, search_radius, grids, bend_factor, geo_pen
 
 
 def get_lon_size():
+    """
+    calculate longitude maximum - minimum longitude of the data points.
+    I suspect this is used in determining the width scaling of the graph
+    :return: maximum longitude minus minimum longitude found in the data points
+    """
     l_max = agency_stops.stop_lon.max()
     l_min = agency_stops.stop_lon.min()
     return l_max - l_min
 
 
 def get_lat_size():
+    """
+    calculate latitude maximum - minimum latitude of the data points.
+    I suspect this is used in determining the height scaling of the graph
+    :return: maximum latitude minus minimum longitude found in the data points
+    """
     l_max = agency_stops.stop_lat.max()
     l_min = agency_stops.stop_lat.min()
     return l_max - l_min
@@ -69,7 +96,20 @@ def get_lat_size():
 
 def calculate_paths(gri_graph, stops, rou_lists, stop_coods, point_routes, search_radius, bend_factor, geo_penalty,
                     min_frac, threshold):
+    """
 
+    :param gri_graph:
+    :param stops: stops contained in the data. I don't know why this is a parameter since this is a global variable.
+    :param rou_lists: list of the relevant fields of hte data contained in agency_routes.
+    :param stop_coods: list of the geographic coordinates of stops
+    :param point_routes: Unexplained by the original author. Possibly a list of points in already existing routes.
+    :param search_radius: int factor unclear, see calculate method for details.
+    :param bend_factor: int factor for penalizing bends in the graph.
+    :param geo_penalty: int factor for penalizing geographic inaccuracy in a graph.
+    :param min_frac: a parameter which is always 1. Ask the original author why it was added
+    :param threshold: 3 times search_radius
+    :return:
+    """
     cnt = 0
 
     for rou in rou_lists.keys():
@@ -79,9 +119,20 @@ def calculate_paths(gri_graph, stops, rou_lists, stop_coods, point_routes, searc
             if st.get_stop_name() not in [station.get_stop_name() for station in rou_lists[rou]] \
                     and st.is_settled():
                 st_node = st.get_coods()
+                # Magic numbers are a bad coding practice. Replace with constant.
+                # 8 might correspond to the 8 possible positions for placing a label
                 for i in range(8):
+                    """
+                    Why 1250? Magic numbers are a bad coding practice. Replace with constant.
+                    Seems to be a factor for discouraging drawing the current route
+                    through settled stations not contained on your route
+                    """
                     grid_graph_copy.edges[st_node, (st_node[0], st_node[1], i)]['weight'] = 1250 * bend_factor
                     for j in range(1, 8 - i):
+                        """
+                        1000 is the penalty factor for unwanted crossings.
+                        Magic numbers are a bad coding practice. Replace with constant.
+                        """
                         grid_graph_copy.edges[(st_node[0], st_node[1], i), (st_node[0], st_node[1], i + j)]['weight'] \
                             = 1000 * bend_factor * (abs(j - 4) + 1)
 
@@ -163,6 +214,7 @@ def calculate_paths(gri_graph, stops, rou_lists, stop_coods, point_routes, searc
                     current_list = gri_graph.edges[node_1, node_2]['routes']
                     current_list += [rou]
                     gri_graph.edges[node_1, node_2]['routes'] = current_list
+                    # magic number. Replace with constant
                     if grid_graph_copy.edges[node_1, node_2]['weight'] >= 0.005:
                         grid_graph_copy.edges[node_1, node_2]['weight'] -= 0.005
 
@@ -170,6 +222,7 @@ def calculate_paths(gri_graph, stops, rou_lists, stop_coods, point_routes, searc
             for node in min_sp:
                 if gri_graph.nodes[node]['node_type'] == 'standard':
                     for i in range(8):
+                        # Magic numbers are a bad coding practice. Replace 125 with constant
                         gri_graph.edges[node, (node[0], node[1], i)]['weight'] = 125 * bend_factor
 
             # close crossing edges
@@ -183,6 +236,7 @@ def calculate_paths(gri_graph, stops, rou_lists, stop_coods, point_routes, searc
                         for j in range(1, 8 - i):
                             if (a <= i <= b) != (
                                     a <= i + j <= b) and i != a and i != b and i + j != a and i + j != b:
+                                # Magic numbers are a bad coding practice. Replace 100 with a constant
                                 gri_graph.edges[(min_sp[k][0], min_sp[k][1], i),
                                                 (min_sp[k][0], min_sp[k][1], i + j)]['weight'] \
                                     = 100 * bend_factor * (abs(j - 4) + 1)
@@ -210,9 +264,24 @@ def calculate_paths(gri_graph, stops, rou_lists, stop_coods, point_routes, searc
 
 
 def get_candidates(grid_graph, stops, st, neighbor, st_node, nb_node, search_radius, min_frac, threshold):
+    """
+
+    :param grid_graph: the current grid_graph
+    :param stops: list of stops in the data
+    :param st: start node
+    :param neighbor: neighboring node to st
+    :param st_node: coordinates of st. This should not be a separate parameter
+    :param nb_node: coordinates of neighbor. This should not be a separate parameter
+    :param search_radius: determines the radius of the point hull
+    :param min_frac: a parameter which is always 1. Ask the original author why it was added
+    :param threshold: 3 times search_radius. Shouldn't this be the (euclidian)
+                    distance between the original coordinates of the node and a point on the edge of the search radius?
+    :return: source_candidates, target candidates: a tuple of two lists containing possible coordinates for start/target nodes
+    respectively
+    """
     source_candidates = [st_node]
     target_candidates = [nb_node]
-
+    # create hull of source node if  not settled
     if not st.is_settled():
 
         alt_nodes = []
@@ -235,7 +304,7 @@ def get_candidates(grid_graph, stops, st, neighbor, st_node, nb_node, search_rad
                     source_candidates.append(node)
                 elif target_distance <= threshold and not neighbor.is_settled():
                     target_candidates.append(node)
-
+    # create hull of neighbor node if not settled
     if not neighbor.is_settled():
 
         alt_nodes = []
@@ -263,6 +332,12 @@ def get_candidates(grid_graph, stops, st, neighbor, st_node, nb_node, search_rad
 
 
 def geodesic_dists(grid_graph, stops, skelet_graph):
+    """
+    :param grid_graph: the grid graph
+    :param stops: stops in the data
+    :param skelet_graph: the line graph of the grid graph
+    :return: a dictionary containing with nodes of the graph as keys with the geodesic distance of the node as value
+    """
     geo_dists = {}
     i = 0
     for st in [st for st in stops.keys() if grid_graph.nodes[st]['drawn']]:
@@ -276,7 +351,20 @@ def geodesic_dists(grid_graph, stops, skelet_graph):
 
 
 def calculate(grids, search_radius, bend_factor, geo_penalty):
-
+    """
+    main method for calculating the grid graph.
+    For some reason saves the completed graph as a JSON outside of the  save_graph() method.
+    JSON files are never read for plotting the graph. That information is read from a pickle file
+    :param grids: int number of cells in the resulting grid.
+    n will result in an n x n grid ( + increases because of collision avoidance)
+    :param search_radius:not directly explained, not even in the accompanying bachelor thesis.
+                    I suspect it is the nuber of nodes an unsettled node can be placed away from its original position.
+                    See hull size in section 4.1.1 of the bachelor thesis.
+    :param bend_factor: int factor for penalizing bends. higher bend_factor = more abstract graph.
+    :param geo_penalty: int factor for penalizing putting stops on the grid to far away from their actual geographic location.
+    higher geo_penalty = higher geographic accuracy
+    :return: this method doesn't return anything
+    """
     SCALE = 200
     orig_grids = grids
     THRESHOLD = 3 * search_radius
@@ -307,12 +395,16 @@ def calculate(grids, search_radius, bend_factor, geo_penalty):
             = ids_of_names[agency_stops['stop_name'][ind]] + [agency_stops['stop_id'][ind]]
 
     for ind in agency_stops.index:
+        # magic numbers are a bad coding practice. Replace 0.5 with constant
         lon = int((agency_stops['stop_lon'][ind] - lon_min) / lon_step + 0.5)
         lat = int((agency_stops['stop_lat'][ind] - lat_min) / lat_step + 0.5)
         if agency_stops['stop_name'][ind] not in stop_labels.values():
 
             if (lon, lat) in ids_of_coods:
                 if orig_coods[(lon, lat)][0] > agency_stops['stop_lon'][ind]:
+                    # why is lon converted to an int again? lon is already of type int
+                    # expression can possibly be simplified to new_lon = lon -/+ 0.5
+                    # if correct it would mean this was written obtuse on purpose
                     new_lon = lon - (int(lon) - lon + 1) / 2
                 else:
                     new_lon = lon + (int(lon) - lon + 1) / 2
@@ -322,7 +414,10 @@ def calculate(grids, search_radius, bend_factor, geo_penalty):
                     new_lat = lat + (int(lat) - lat + 1) / 2
                 grids += 1
                 new_coods = [(lon, new_lat), (new_lon, lat), (new_lon, new_lat)]
+                # picks the minimum between min_frac, 1, 1
+                # was originally set to 1 and should therefore stay 1
                 min_frac = min(min_frac, int(lon) - lon + 1, int(lat) - lat + 1)
+                print(min_frac)
             else:
                 new_coods = [(lon, lat)]
 
@@ -350,12 +445,14 @@ def calculate(grids, search_radius, bend_factor, geo_penalty):
         labels_of_ids[agency_stops['stop_id'][ind]] = agency_stops['stop_name'][ind]
 
     grid_graph = setup_grid_graph(stations, lines, stops, SCALE, lon_size, lat_size, bend_factor)
+    # Magic numbers are a bad coding practice. Replace with constant
     min_frac = max(0.25, min_frac)
 
     stops_set = list(set(stops.values()))
 
     routes_of_pairs = {(stop_1.get_stop_name(), stop_2.get_stop_name()): [] for stop_1 in stops_set for stop_2 in
                        stops_set}
+
     route_lists = {rou_id[3:5]: [] for rou_id in agency_route_ids}
     for rou_id in agency_route_ids:
 

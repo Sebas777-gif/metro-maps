@@ -300,7 +300,10 @@ def plot_graph(grids, geo_penalty, bend_factor, search_radius):
         links_string.append(edge_string)
 
     params = {"nodes": array_string, "links": links_string}
-
+    """
+    the following code would be used for labeling the stops on the drawing of the graph,
+    but was commented out by the original author. I am not aware why.
+    """
     """
     node_list = sorted([node for node in grid_graph.nodes if grid_graph.nodes[node]['geo_dist'] >= 0
                         and grid_graph.nodes[node]['drawn']], key=lambda x: grid_graph.nodes[x]['geo_dist'])
