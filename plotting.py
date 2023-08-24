@@ -13,11 +13,27 @@ directions = {0: 'block_n', 1: 'block_ne', 2: 'block_e', 3: 'block_se',
               4: 'block_s', 5: 'block_sw', 6: 'block_w', 7: 'block_nw'}
 neighbors = {0: 'neighbor_n', 1: 'neighbor_ne', 2: 'neighbor_e', 3: 'neighbor_se',
              4: 'neighbor_s', 5: 'neighbor_sw', 6: 'neighbor_w', 7: 'neighbor_nw'}
+"""
+Maps the corresponding directional vector to the direction:
+0: up
+1: right up
+2: right middle
+3: right down
+4: down
+5: left down
+6: left
+7: left up
+"""
 geometry = {0: (0, -1), 1: (-1, -1), 2: (-1, 0), 3: (-1, 1), 4: (0, 1), 5: (1, 1), 6: (1, 0), 7: (1, -1)}
 
 
 def do_polygons_intersect(a, b):
+    """
 
+    :param a:
+    :param b:
+    :return:
+    """
     for poly in [a, b]:
 
         for i1 in range(len(poly)):
@@ -48,11 +64,22 @@ def do_polygons_intersect(a, b):
 
 
 def make_length(v, length):
+    """
+    takes the unscaled directional vector of the label and sclaes it according to the label length
+    :param v: directional vector v of the label
+    :param length: length of the label
+    :return: directional vector of the label scaled by length
+    """
     current_len = math.sqrt(v[0] ** 2 + v[1] ** 2)
     return v[0] / current_len * length, v[1] / current_len * length
 
 
 def pos_prio(x):
+    """
+    helper function for sorting a list of directions according to priority
+    :param x: int direction
+    :return: index of the element
+    """
     if x in [2, 6]:
         return 0
     elif x in [1, 3, 5, 7]:
@@ -64,7 +91,15 @@ def pos_prio(x):
 
 
 def check_for_collisions(grid_graph, node, pos, label_len, label_hgt):
-
+    """
+    Checks for collisions when placing a label on a node in the graph
+    :param grid_graph: the graph
+    :param node: the node to place a label on
+    :param pos: position of the label
+    :param label_len: length of the label
+    :param label_hgt: height of the label
+    :return: bool returns False if the label doesn't collide with anything, otherwise returns True
+    """
     if geometry[pos][0] >= 0:
         x_corr = 0.01
     else:
@@ -82,7 +117,7 @@ def check_for_collisions(grid_graph, node, pos, label_len, label_hgt):
     node_4 = (node_3[0] + make_length(geometry[(pos + 4) % 8], label_len)[0],
               node_3[1] + make_length(geometry[(pos + 4) % 8], label_len)[1])
     node_poly = [node_1, node_2, node_3, node_4]
-
+    # iterate over the subgraph induced by node with a radius of 3 nodes
     for nb_node in nx.ego_graph(grid_graph, node, radius=3 * label_len, distance='alt_weight').nodes:
 
         nb_node = (nb_node[0], nb_node[1])
@@ -142,8 +177,16 @@ def check_for_collisions(grid_graph, node, pos, label_len, label_hgt):
 
 
 def place_label(grid_graph, node, stop_label):
-
+    """
+    places a label on a node in the graph. Does not set the actual text.
+    :param grid_graph: the grid graph
+    :param node: node that needs to be labeled
+    :param stop_label: label for the node
+    :return: no return value
+    """
+    #only drections the node has no neighbor in are eligible for lable placement
     possible_pos = [i for i in range(8) if grid_graph.nodes[node][directions[i]] == 0]
+    # uses the method pos_prio as sorting key
     possible_pos.sort(key=pos_prio)
     # MAGIC
     label_len = max([len(label) for label in stop_label.split('\n')]) * 0.15
@@ -167,11 +210,22 @@ def place_label(grid_graph, node, stop_label):
 
 
 def convert_string(s):
+    """
+    converts a string which consists of two comma separated floats into two floats
+    :param s: Input String
+    :return: two float numbers
+    """
     numbers = s.split(',')
     return float(numbers[0]), float(numbers[1])
 
 
 def get_dir(a, b):
+    """
+    determines the direction of the edge between two nodes
+    :param a: first node
+    :param b: second node
+    :return: int edge direction one of 8 possibiulities
+    """
     if a[0] < b[0]:
         if a[1] < b[1]:
             return 5
@@ -194,7 +248,11 @@ def get_dir(a, b):
 
 
 def find_lines(route_lists):
-
+    """
+    finds straight lines in a list of routes
+    :param route_lists:
+    :return: straight lines
+    """
     straight_lines = {rou_id: [] for rou_id in route_lists.keys()}
     for rou_id in route_lists.keys():
         rou = route_lists[rou_id]
@@ -212,6 +270,12 @@ def find_lines(route_lists):
 
 
 def optimize(grid_graph, line):
+    """
+    helper method of optimize_consistency
+    :param grid_graph:
+    :param line: list of lines
+    :return: int recommended label direction
+    """
     invert_trans_table = [2, 6, 1, 3, 5, 7, 0, 4]
     fitting_labels = [0, 0, 0, 0, 0, 0, 0, 0]
     trans_table = [6, 2, 0, 3, 7, 4, 1, 5]
@@ -226,6 +290,12 @@ def optimize(grid_graph, line):
 
 
 def optimize_consistency(grid_graph, straight_lines):
+    """
+    optimize directional consistency of labels close to each other
+    :param grid_graph: the grid graph
+    :param straight_lines: list of straight lines
+    :return: no return value
+    """
     settled = {x: False for x in grid_graph.nodes}
     i = 0
     for rou_lines in straight_lines.values():
@@ -244,7 +314,15 @@ def optimize_consistency(grid_graph, straight_lines):
 
 
 def plot_graph(grids, geo_penalty, bend_factor, search_radius):
-
+    """
+    loads a grid graph and color graph from a file, determines rendering information and places labels on the nodes (currently unused)
+    :param grids: int graph parameter. Used here for filename searching
+    :param geo_penalty: int graph parameter. Used here for filename searching
+    :param bend_factor: int graph parameter. Used here for filename searching
+    :param search_radius: int graph parameter. Used here for filename searching
+    :return: params: dictionary<list>: A dictionary containing two lists. One with rendering information for nodes,
+                                        the other with rendering information for edges
+    """
     gri_graph = nx.read_gpickle('grid_graph_s' + str(search_radius) + 'gr' + str(grids) + 'b' + str(bend_factor)
                                 + 'geo' + str(geo_penalty) + '.pickle')
     col_graph = nx.read_gpickle('color_graph_s' + str(search_radius) + 'gr' + str(grids) + 'b' + str(bend_factor)
@@ -267,6 +345,8 @@ def plot_graph(grids, geo_penalty, bend_factor, search_radius):
     diff_y = - min_y
 
     for node in gri_graph.nodes:
+        # magic number replace 300 with constant
+        # scale node position for every node in the graph
         gri_graph.nodes[node]['pos'] = ((gri_graph.nodes[node]['pos'][0] + diff_x) / (max_x - min_x) * 300,
                                         (gri_graph.nodes[node]['pos'][1] + diff_y) / (max_y - min_y) * 300)
 

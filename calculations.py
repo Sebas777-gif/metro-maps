@@ -29,7 +29,15 @@ agency_stop_ids = agency_stop_times.stop_id.tolist()
 stops = pd.read_csv("stops.txt")
 agency_stops = stops[stops['stop_id'].isin(agency_stop_ids)]
 # end read data from files
-
+# begin define constants
+MIN_FRAC_MINIMUM = 0.25
+BEND_FACTOR_PENALTY_SINK_CLOSING = 125
+BEND_FACTOR_PENALTY_CROSS_CLOSING = 100
+BEND_FACTOR_PENALTY_SETTLED = 1000
+BEND_FACTOR_PENALTY_SETTLED_TWO = 1250
+# lines in octilinear graphs have an angle of a multitude of 45 degrees -> 8 possible edge directions
+NUMBER_EDGE_DIRECTIONS = 8
+# end define constants
 
 def save_graphs(gri_graph, col_graph, search_radius, grids, bend_factor, geo_penalty):
     """
@@ -119,22 +127,15 @@ def calculate_paths(gri_graph, stops, rou_lists, stop_coods, point_routes, searc
             if st.get_stop_name() not in [station.get_stop_name() for station in rou_lists[rou]] \
                     and st.is_settled():
                 st_node = st.get_coods()
-                # Magic numbers are a bad coding practice. Replace with constant.
-                # 8 might correspond to the 8 possible positions for placing a label
-                for i in range(8):
-                    """
-                    Why 1250? Magic numbers are a bad coding practice. Replace with constant.
-                    Seems to be a factor for discouraging drawing the current route
-                    through settled stations not contained on your route
-                    """
-                    grid_graph_copy.edges[st_node, (st_node[0], st_node[1], i)]['weight'] = 1250 * bend_factor
-                    for j in range(1, 8 - i):
-                        """
-                        1000 is the penalty factor for unwanted crossings.
-                        Magic numbers are a bad coding practice. Replace with constant.
-                        """
+
+                # was originally a magic number. This is my best guess to its meaning
+                for i in range(NUMBER_EDGE_DIRECTIONS):
+                    # used to be a magic number. Accompanying bachelor thesis doesn't explain the meaning This is my guess
+                    grid_graph_copy.edges[st_node, (st_node[0], st_node[1], i)]['weight'] = BEND_FACTOR_PENALTY_SETTLED_TWO * bend_factor
+                    for j in range(1, NUMBER_EDGE_DIRECTIONS - i):
+                        # used to be a magic number. bachelor thesis states the existence of a penalty factor for closing settled stations
                         grid_graph_copy.edges[(st_node[0], st_node[1], i), (st_node[0], st_node[1], i + j)]['weight'] \
-                            = 1000 * bend_factor * (abs(j - 4) + 1)
+                            = BEND_FACTOR_PENALTY_SETTLED * bend_factor * (abs(j - 4) + 1)
 
         for m in range(len(rou_lists[rou]) - 1):
 
@@ -150,9 +151,9 @@ def calculate_paths(gri_graph, stops, rou_lists, stop_coods, point_routes, searc
                                                                       search_radius, min_frac, threshold)
 
             if m == 0 and nb.is_settled():
-                for i in range(8):
+                for i in range(NUMBER_EDGE_DIRECTIONS):
                     grid_graph_copy.edges[nb_node, (nb_node[0], nb_node[1], i)]['weight'] = 3 * bend_factor
-                    for j in range(1, 8 - i):
+                    for j in range(1, NUMBER_EDGE_DIRECTIONS - i):
                         grid_graph_copy.edges[(nb_node[0], nb_node[1], i), (nb_node[0], nb_node[1], i + j)]['weight'] \
                             = bend_factor * abs(j - 4)
 
@@ -214,16 +215,15 @@ def calculate_paths(gri_graph, stops, rou_lists, stop_coods, point_routes, searc
                     current_list = gri_graph.edges[node_1, node_2]['routes']
                     current_list += [rou]
                     gri_graph.edges[node_1, node_2]['routes'] = current_list
-                    # magic number. Replace with constant
+                    # magic number. Unexplained by original author
                     if grid_graph_copy.edges[node_1, node_2]['weight'] >= 0.005:
                         grid_graph_copy.edges[node_1, node_2]['weight'] -= 0.005
 
             # close sinks
             for node in min_sp:
                 if gri_graph.nodes[node]['node_type'] == 'standard':
-                    for i in range(8):
-                        # Magic numbers are a bad coding practice. Replace 125 with constant
-                        gri_graph.edges[node, (node[0], node[1], i)]['weight'] = 125 * bend_factor
+                    for i in range(NUMBER_EDGE_DIRECTIONS):
+                        gri_graph.edges[node, (node[0], node[1], i)]['weight'] = BEND_FACTOR_PENALTY_SINK_CLOSING * bend_factor
 
             # close crossing edges
             if len(min_sp) >= 5:
@@ -232,28 +232,28 @@ def calculate_paths(gri_graph, stops, rou_lists, stop_coods, point_routes, searc
                     b = min_sp[k + 1][2]
                     if a > b:
                         a, b = b, a
-                    for i in range(8):
-                        for j in range(1, 8 - i):
+                    for i in range(NUMBER_EDGE_DIRECTIONS):
+                        for j in range(1, NUMBER_EDGE_DIRECTIONS - i):
                             if (a <= i <= b) != (
                                     a <= i + j <= b) and i != a and i != b and i + j != a and i + j != b:
-                                # Magic numbers are a bad coding practice. Replace 100 with a constant
+
                                 gri_graph.edges[(min_sp[k][0], min_sp[k][1], i),
                                                 (min_sp[k][0], min_sp[k][1], i + j)]['weight'] \
-                                    = 100 * bend_factor * (abs(j - 4) + 1)
+                                    = BEND_FACTOR_PENALTY_CROSS_CLOSING * bend_factor * (abs(j - 4) + 1)
 
             # settle stops, re-open sinks
             st.settle()
             st_node = st.get_coods()
             # close stop to avoid loops
-            for i in range(8):
+            for i in range(NUMBER_EDGE_DIRECTIONS):
                 grid_graph_copy.edges[st_node, (st_node[0], st_node[1], i)]['weight'] = 1250 * bend_factor
-                for j in range(1, 8 - i):
+                for j in range(1, NUMBER_EDGE_DIRECTIONS - i):
                     grid_graph_copy.edges[(st_node[0], st_node[1], i), (st_node[0], st_node[1], i + j)]['weight'] \
                         = 1000 * bend_factor * (abs(j - 4) + 1)
 
             if not nb.is_settled():
                 nb_node = nb.get_coods()
-                for i in range(8):
+                for i in range(NUMBER_EDGE_DIRECTIONS):
                     gri_graph.edges[nb_node, (nb_node[0], nb_node[1], i)]['weight'] = 3 * bend_factor
             nb.settle()
 
@@ -274,8 +274,7 @@ def get_candidates(grid_graph, stops, st, neighbor, st_node, nb_node, search_rad
     :param nb_node: coordinates of neighbor. This should not be a separate parameter
     :param search_radius: determines the radius of the point hull
     :param min_frac: a parameter which is always 1. Ask the original author why it was added
-    :param threshold: 3 times search_radius. Shouldn't this be the (euclidian)
-                    distance between the original coordinates of the node and a point on the edge of the search radius?
+    :param threshold: 3 times search_radius.
     :return: source_candidates, target candidates: a tuple of two lists containing possible coordinates for start/target nodes
     respectively
     """
@@ -333,6 +332,7 @@ def get_candidates(grid_graph, stops, st, neighbor, st_node, nb_node, search_rad
 
 def geodesic_dists(grid_graph, stops, skelet_graph):
     """
+    calculates and returns the geodesic distances of the individual nodes
     :param grid_graph: the grid graph
     :param stops: stops in the data
     :param skelet_graph: the line graph of the grid graph
@@ -353,13 +353,11 @@ def geodesic_dists(grid_graph, stops, skelet_graph):
 def calculate(grids, search_radius, bend_factor, geo_penalty):
     """
     main method for calculating the grid graph.
-    For some reason saves the completed graph as a JSON outside of the  save_graph() method.
+    For some reason it saves the completed graph as a JSON outside of the save_graph() method.
     JSON files are never read for plotting the graph. That information is read from a pickle file
     :param grids: int number of cells in the resulting grid.
     n will result in an n x n grid ( + increases because of collision avoidance)
-    :param search_radius:not directly explained, not even in the accompanying bachelor thesis.
-                    I suspect it is the nuber of nodes an unsettled node can be placed away from its original position.
-                    See hull size in section 4.1.1 of the bachelor thesis.
+    :param search_radius: int radius of the point hull of unsettled nodes.
     :param bend_factor: int factor for penalizing bends. higher bend_factor = more abstract graph.
     :param geo_penalty: int factor for penalizing putting stops on the grid to far away from their actual geographic location.
     higher geo_penalty = higher geographic accuracy
@@ -395,7 +393,7 @@ def calculate(grids, search_radius, bend_factor, geo_penalty):
             = ids_of_names[agency_stops['stop_name'][ind]] + [agency_stops['stop_id'][ind]]
 
     for ind in agency_stops.index:
-        # magic numbers are a bad coding practice. Replace 0.5 with constant
+        # magic number. unexplained by original author
         lon = int((agency_stops['stop_lon'][ind] - lon_min) / lon_step + 0.5)
         lat = int((agency_stops['stop_lat'][ind] - lat_min) / lat_step + 0.5)
         if agency_stops['stop_name'][ind] not in stop_labels.values():
@@ -403,8 +401,7 @@ def calculate(grids, search_radius, bend_factor, geo_penalty):
             if (lon, lat) in ids_of_coods:
                 if orig_coods[(lon, lat)][0] > agency_stops['stop_lon'][ind]:
                     # why is lon converted to an int again? lon is already of type int
-                    # expression can possibly be simplified to new_lon = lon -/+ 0.5
-                    # if correct it would mean this was written obtuse on purpose
+                    # expression looks like it can be simplified to new_lon = lon +/- 0.5 but results differ
                     new_lon = lon - (int(lon) - lon + 1) / 2
                 else:
                     new_lon = lon + (int(lon) - lon + 1) / 2
@@ -415,9 +412,8 @@ def calculate(grids, search_radius, bend_factor, geo_penalty):
                 grids += 1
                 new_coods = [(lon, new_lat), (new_lon, lat), (new_lon, new_lat)]
                 # picks the minimum between min_frac, 1, 1
-                # was originally set to 1 and should therefore stay 1
+                # was originally set to 1 and therefore stays 1
                 min_frac = min(min_frac, int(lon) - lon + 1, int(lat) - lat + 1)
-                print(min_frac)
             else:
                 new_coods = [(lon, lat)]
 
@@ -445,8 +441,8 @@ def calculate(grids, search_radius, bend_factor, geo_penalty):
         labels_of_ids[agency_stops['stop_id'][ind]] = agency_stops['stop_name'][ind]
 
     grid_graph = setup_grid_graph(stations, lines, stops, SCALE, lon_size, lat_size, bend_factor)
-    # Magic numbers are a bad coding practice. Replace with constant
-    min_frac = max(0.25, min_frac)
+    # I don't know why this is done since min_frac is currently always set to 1 which is larger than the minimum
+    min_frac = max(MIN_FRAC_MINIMUM, min_frac)
 
     stops_set = list(set(stops.values()))
 
