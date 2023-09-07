@@ -4,10 +4,13 @@ let container = document.getElementById("layout");
 
 let VIEW_WIDTH = 340,
     HEIGHT = VIEW_WIDTH,
-    WIDTH = VIEW_WIDTH;
+    WIDTH = VIEW_WIDTH ;
 
 let LINK_WIDTH = 0.5;
-
+let ANGLE_INCREMENT = 45; // only multiples of 45 are allowed for label directions
+let LABEL_DIRECTIONS = 8; // resulting in 8 possible directions
+let DIRECTION_OFFSET_RIGHT = 6; // Offset for rotating right aligned text. Since 0 is up in the data, but starting position is right
+let DIRECTION_OFFSET_LEFT = 2 // Offset for rotating left aligned text. Since 0 is up in the data, but starting position is left
 let nodes, links, node, link, force;
 
 function displayLayout(params) {
@@ -54,17 +57,67 @@ function displayLayout(params) {
         });
 
     // Draw the nodes
-
     node = svg.selectAll('.node')
         .data(nodes)
         .enter()
-        .append('circle')
-        .classed('node', true)
-        .attr('r', d => d.size / 2)
+        .append('g')
+        .attr('class', 'node')
+        .attr('transform', d => {
 
+            return "translate(" + d.x + "," + d.y + ")";
+        });
+
+    node.append("circle")
+        .attr('r', d => d.size / 2);
+        //.style("fill", d.color);
+
+    node.append("text")
+        .style("font-size", d => {
+            return d.label_len
+        } )
+        .style("text-anchor", d => {
+          if ([5,6,7].includes(Number(d.label_dir))){
+              return "start"
+          }
+          return "end";
+        } )
+        .style("fill", d => d.color)
+        //.attr("dx", 3)
+        .attr("font-weight", 300)
+        .attr("letter-spacing",   0.3 + "em")
+        .text(function (d) {
+            if (d.label.length > 9){
+                const wordarray = d.label.split(" ");
+                let linebreak_label = "";
+                for (let i = 0; i<wordarray.length; i++){
+                    linebreak_label = linebreak_label + wordarray[i] + "\n"
+                }
+                return linebreak_label;
+            }
+            else{
+                return d.label;
+            }
+
+        })
+        //.attr("font-family", "sans-serif")
+
+        .attr('transform', d => {
+            let angle
+            if ([5,6,7].includes(Number(d.label_dir))){
+                angle = ((Number(d.label_dir) + DIRECTION_OFFSET_LEFT) % LABEL_DIRECTIONS) * ANGLE_INCREMENT
+
+            }else {
+                angle = ((Number(d.label_dir) + DIRECTION_OFFSET_RIGHT) % LABEL_DIRECTIONS) * ANGLE_INCREMENT
+
+            }
+            return "rotate("+ angle + ")";
+        })
+
+    //node.append()
     force = d3.forceSimulation()
-    .nodes(nodes)
-    .on("tick", tick);
+        .nodes(nodes)
+        .on("tick", tick);
+
 
     node.call(drag);
 }
@@ -76,8 +129,10 @@ function tick() {
         .attr('x2', d => d.target.x)
         .attr('y2', d => d.target.y);
     node
-        .attr('cx', d => d.x)
-        .attr('cy', d => d.y);
+        .attr('transform', d => {
+
+        return "translate(" + d.x + "," + d.y + ")";
+        });
 }
 
 /**
@@ -89,6 +144,10 @@ function tick() {
  * the given line segment and the translated line segment equals targetDistance
  */
 function calcTranslation(targetDistance, point0, point1) {
+    console.log(targetDistance)
+    console.log("p0.x", point0.x, "p0.y", point0.y)
+    console.log("p1.x", point1.x, "p1.y", point1.y)
+    //targetDistance = 1;
     let x1_x0 = point1.x - point0.x,
         y1_y0 = point1.y - point0.y,
         x2_x0, y2_y0;
