@@ -2,7 +2,7 @@
 
 let container = document.getElementById("layout");
 
-let VIEW_WIDTH = 340,
+let VIEW_WIDTH = 1200,
     HEIGHT = VIEW_WIDTH,
     WIDTH = VIEW_WIDTH ;
 
@@ -31,6 +31,12 @@ function displayLayout(params) {
         let obj = {};
         let source = nodes.filter(e => e.id === d.source)[0];
         let target = nodes.filter(e => e.id === d.target)[0];
+        /*
+        source.x = source.x * 3
+        source.y = source.y * 3
+        target.y = target.y * 3
+        target.y = target.y * 3
+        */
         obj['source'] = source;
         obj['target'] = target;
         obj['color'] = d.color;
@@ -64,54 +70,73 @@ function displayLayout(params) {
         .attr('class', 'node')
         .attr('transform', d => {
 
-            return "translate(" + d.x + "," + d.y + ")";
+            return "translate(" + d.x*3 + "," + d.y*3 + ")";
         });
 
     node.append("circle")
-        .attr('r', d => d.size / 2);
+        .attr('r', d => d.size *3 / 2);
         //.style("fill", d.color);
 
     node.append("text")
         .style("font-size", d => {
-            return d.label_len
+            return 8
         } )
         .style("text-anchor", d => {
           if ([5,6,7].includes(Number(d.label_dir))){
-              return "start"
+              return "end"
           }
-          return "end";
+          return "start";
         } )
         .style("fill", d => d.color)
         //.attr("dx", 3)
         .attr("font-weight", 300)
-        .attr("letter-spacing",   0.3 + "em")
+        //.attr("letter-spacing",   0.3 + "em")
         .text(function (d) {
-            if (d.label.length > 9){
-                const wordarray = d.label.split(" ");
-                let linebreak_label = "";
-                for (let i = 0; i<wordarray.length; i++){
-                    linebreak_label = linebreak_label + wordarray[i] + "\n"
-                }
-                return linebreak_label;
-            }
-            else{
+            if(d.size < 1){
+                return ""
+            }else{
                 return d.label;
             }
-
         })
         //.attr("font-family", "sans-serif")
 
         .attr('transform', d => {
             let angle
+
             if ([5,6,7].includes(Number(d.label_dir))){
                 angle = ((Number(d.label_dir) + DIRECTION_OFFSET_LEFT) % LABEL_DIRECTIONS) * ANGLE_INCREMENT
-
+                //angle = 0
             }else {
                 angle = ((Number(d.label_dir) + DIRECTION_OFFSET_RIGHT) % LABEL_DIRECTIONS) * ANGLE_INCREMENT
+            }
+            if (d.label_dir != -1){
 
+                console.log(d.label)
+                console.log(d.label_dir)
+                console.log(angle)
             }
             return "rotate("+ angle + ")";
         })
+
+    let insertLinebreaks = function (d) {
+        try{
+            //let el = svg.selectAll('.node')
+            let words = d.label.split(' ');
+            //console.log("words",words)
+            //el.text('');
+            //console.log("el", el)
+            for (var i = 0; i < words.length; i++) {
+                var tspan = node.text.append('tspan').text(words[i]);
+                if (i > 0)
+                    tspan.attr('x', 0).attr('dy', '15');
+            }
+        }catch (exception){
+
+        }
+
+    };
+
+    //node.each(insertLinebreaks);
 
     //node.append()
     force = d3.forceSimulation()
@@ -124,14 +149,14 @@ function displayLayout(params) {
 
 function tick() {
     link
-        .attr('x1', d => d.source.x)
-        .attr('y1', d => d.source.y)
-        .attr('x2', d => d.target.x)
-        .attr('y2', d => d.target.y);
+        .attr('x1', d => d.source.x*3)
+        .attr('y1', d => d.source.y*3)
+        .attr('x2', d => d.target.x*3)
+        .attr('y2', d => d.target.y*3);
     node
         .attr('transform', d => {
 
-        return "translate(" + d.x + "," + d.y + ")";
+        return "translate(" + d.x*3 + "," + d.y*3 + ")";
         });
 }
 
@@ -144,9 +169,6 @@ function tick() {
  * the given line segment and the translated line segment equals targetDistance
  */
 function calcTranslation(targetDistance, point0, point1) {
-    console.log(targetDistance)
-    console.log("p0.x", point0.x, "p0.y", point0.y)
-    console.log("p1.x", point1.x, "p1.y", point1.y)
     //targetDistance = 1;
     let x1_x0 = point1.x - point0.x,
         y1_y0 = point1.y - point0.y,
