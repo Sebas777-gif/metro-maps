@@ -4,8 +4,10 @@
 }
 
 html, body {
-  height: 1400px;
-  width: 1400px;
+    height: 1400px;
+    width: 1400px;
+    font-family: sans-serif;
+    font-weight: 100;
 }
 
 .layout-view {

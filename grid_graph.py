@@ -4,7 +4,17 @@ import bisect
 
 
 def setup_grid_graph(stations, lines, stop_labels, scale, lon_size, lat_size, bend_factor):
+    """
 
+    :param stations:
+    :param lines:
+    :param stop_labels:
+    :param scale:
+    :param lon_size:
+    :param lat_size:
+    :param bend_factor:
+    :return:
+    """
     grid_graph = nx.Graph()
 
     points = {line: [] for line in lines}

@@ -1,3 +1,5 @@
+import json
+
 from flask import Flask, render_template, request
 from calculations import calculate
 from plotting import plot_graph
@@ -32,7 +34,13 @@ def display_layout():
     geo_penalty = int(request.form['geo'])
     bend_factor = int(request.form['bend'])
     search_radius = int(request.form['radius'])
-    params = plot_graph(grids, geo_penalty, bend_factor, search_radius)
+    try:
+        with open('grid_graph_s' + str(search_radius) + 'gr' + str(grids) + 'b' + str(bend_factor)
+                  + 'geo' + str(geo_penalty) + "params.json", 'r') as json_file:
+            params = json.load(json_file)
+    except FileNotFoundError :
+        params = plot_graph(grids, geo_penalty, bend_factor, search_radius)
+
     return render_template("layout.html", data=params)
 
 

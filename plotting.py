@@ -2,10 +2,12 @@ import networkx as nx
 import numpy as np
 import os
 import math
-
-
+import json
+#begin define constants
 LINE_WIDTH = 0.1
-
+NODE_POSITION_SCALING = 300
+NUMBER_LABEL_DIRECTIONS = 8
+# end define constants
 ROOT_DIR = os.path.dirname(os.path.abspath(__file__))
 os.chdir(os.path.join(ROOT_DIR, 'gtfs'))
 
@@ -21,7 +23,7 @@ Maps the corresponding directional vector to the direction:
 3: right down
 4: down
 5: left down
-6: left
+6: left middle
 7: left up
 """
 geometry = {0: (0, -1), 1: (-1, -1), 2: (-1, 0), 3: (-1, 1), 4: (0, 1), 5: (1, 1), 6: (1, 0), 7: (1, -1)}
@@ -93,7 +95,7 @@ def pos_prio(x):
 def check_for_collisions(grid_graph, node, pos, label_len, label_hgt):
     """
     Checks for collisions when placing a label on a node in the graph
-    :param grid_graph: the graph
+    :param grid_graph: grid graoh
     :param node: the node to place a label on
     :param pos: position of the label
     :param label_len: length of the label
@@ -112,10 +114,10 @@ def check_for_collisions(grid_graph, node, pos, label_len, label_hgt):
     node_1 = (node[0] + x_corr, node[1] + y_corr)
     node_2 = (node_1[0] + make_length(geometry[pos], label_len)[0],
               node_1[1] + make_length(geometry[pos], label_len)[1])
-    node_3 = (node_2[0] + make_length(geometry[(pos + 2) % 8], label_hgt)[0],
-              node_2[1] + make_length(geometry[(pos + 2) % 8], label_hgt)[1])
-    node_4 = (node_3[0] + make_length(geometry[(pos + 4) % 8], label_len)[0],
-              node_3[1] + make_length(geometry[(pos + 4) % 8], label_len)[1])
+    node_3 = (node_2[0] + make_length(geometry[(pos + 2) % NUMBER_LABEL_DIRECTIONS], label_hgt)[0],
+              node_2[1] + make_length(geometry[(pos + 2) % NUMBER_LABEL_DIRECTIONS], label_hgt)[1])
+    node_4 = (node_3[0] + make_length(geometry[(pos + 4) % NUMBER_LABEL_DIRECTIONS], label_len)[0],
+              node_3[1] + make_length(geometry[(pos + 4) % NUMBER_LABEL_DIRECTIONS], label_len)[1])
     node_poly = [node_1, node_2, node_3, node_4]
     # iterate over the subgraph induced by node with a radius of 3 nodes
     for nb_node in nx.ego_graph(grid_graph, node, radius=3 * label_len, distance='alt_weight').nodes:
@@ -140,10 +142,10 @@ def check_for_collisions(grid_graph, node, pos, label_len, label_hgt):
             nb_node_1 = (nb_node[0] + x_corr, nb_node[1] + y_corr)
             nb_node_2 = (nb_node_1[0] + make_length(geometry[direction], nb_label_len)[0],
                          nb_node_1[1] + make_length(geometry[direction], nb_label_len)[1])
-            nb_node_3 = (nb_node_2[0] + make_length(geometry[(direction + 2) % 8], nb_label_hgt)[0],
-                         nb_node_2[1] + make_length(geometry[(direction + 2) % 8], nb_label_hgt)[1])
-            nb_node_4 = (nb_node_3[0] + make_length(geometry[(direction + 4) % 8], nb_label_len)[0],
-                         nb_node_3[1] + make_length(geometry[(direction + 4) % 8], nb_label_len)[1])
+            nb_node_3 = (nb_node_2[0] + make_length(geometry[(direction + 2) % NUMBER_LABEL_DIRECTIONS], nb_label_hgt)[0],
+                         nb_node_2[1] + make_length(geometry[(direction + 2) % NUMBER_LABEL_DIRECTIONS], nb_label_hgt)[1])
+            nb_node_4 = (nb_node_3[0] + make_length(geometry[(direction + 4) % NUMBER_LABEL_DIRECTIONS], nb_label_len)[0],
+                         nb_node_3[1] + make_length(geometry[(direction + 4) % NUMBER_LABEL_DIRECTIONS], nb_label_len)[1])
             nb_poly = [nb_node_1, nb_node_2, nb_node_3, nb_node_4]
         else:
             continue
@@ -180,12 +182,12 @@ def place_label(grid_graph, node, stop_label):
     """
     places a label on a node in the graph. Does not set the actual text.
     :param grid_graph: the grid graph
-    :param node: node that needs to be labeled
-    :param stop_label: label for the node
+    :param node: node to be labeled
+    :param stop_label: a label for the node
     :return: no return value
     """
-    #only drections the node has no neighbor in are eligible for lable placement
-    possible_pos = [i for i in range(8) if grid_graph.nodes[node][directions[i]] == 0]
+    # only directions the node has no neighbor in are eligible for label placement
+    possible_pos = [i for i in range(NUMBER_LABEL_DIRECTIONS) if grid_graph.nodes[node][directions[i]] == 0]
     # uses the method pos_prio as sorting key
     possible_pos.sort(key=pos_prio)
     # MAGIC
@@ -207,7 +209,7 @@ def place_label(grid_graph, node, stop_label):
     grid_graph.nodes[node]['label_len'] = label_len
     grid_graph.nodes[node]['label_hgt'] = label_hgt
     grid_graph.nodes[node]['label_dir'] = pos
-
+    grid_graph.nodes[node]['stop_label'] = stop_label
 
 def convert_string(s):
     """
@@ -224,7 +226,7 @@ def get_dir(a, b):
     determines the direction of the edge between two nodes
     :param a: first node
     :param b: second node
-    :return: int edge direction one of 8 possibiulities
+    :return: int edge direction one of 8 possibilities
     """
     if a[0] < b[0]:
         if a[1] < b[1]:
@@ -282,7 +284,7 @@ def optimize(grid_graph, line):
     for x in line:
         label_len = grid_graph.nodes[x]['label_len']
         label_hgt = grid_graph.nodes[x]['label_hgt']
-        for i in range(8):
+        for i in range(NUMBER_LABEL_DIRECTIONS):
             if grid_graph.nodes[x][directions[i]] == 0 and not check_for_collisions(grid_graph, x, i, label_len,
                                                                                     label_hgt):
                 fitting_labels[trans_table[i]] = fitting_labels[trans_table[i]] + 1
@@ -320,7 +322,7 @@ def plot_graph(grids, geo_penalty, bend_factor, search_radius):
     :param geo_penalty: int graph parameter. Used here for filename searching
     :param bend_factor: int graph parameter. Used here for filename searching
     :param search_radius: int graph parameter. Used here for filename searching
-    :return: params: dictionary<list>: A dictionary containing two lists. One with rendering information for nodes,
+    :return: params: dictionary: A dictionary containing two lists. One with rendering information for nodes,
                                         the other with rendering information for edges
     """
     gri_graph = nx.read_gpickle('grid_graph_s' + str(search_radius) + 'gr' + str(grids) + 'b' + str(bend_factor)
@@ -345,16 +347,60 @@ def plot_graph(grids, geo_penalty, bend_factor, search_radius):
     diff_y = - min_y
 
     for node in gri_graph.nodes:
-        # magic number replace 300 with constant
         # scale node position for every node in the graph
-        gri_graph.nodes[node]['pos'] = ((gri_graph.nodes[node]['pos'][0] + diff_x) / (max_x - min_x) * 300,
-                                        (gri_graph.nodes[node]['pos'][1] + diff_y) / (max_y - min_y) * 300)
+        gri_graph.nodes[node]['pos'] = ((gri_graph.nodes[node]['pos'][0] + diff_x) / (max_x - min_x) * NODE_POSITION_SCALING,
+                                        (gri_graph.nodes[node]['pos'][1] + diff_y) / (max_y - min_y) * NODE_POSITION_SCALING)
 
+
+    """
+    the following code would be used for labeling the stops on the drawing of the graph,
+    but was commented out by the original author. I am not aware why.
+    """
+
+    node_list = sorted([node for node in gri_graph.nodes if gri_graph.nodes[node]['geo_dist'] >= 0
+                        and gri_graph.nodes[node]['drawn']], key=lambda x: gri_graph.nodes[x]['geo_dist'])
+    beaut_labels = {}
+    i = 0
+    for node in node_list:
+        i += 1
+        # make the labels a bit more beautiful
+        st_label = gri_graph.nodes[node]['stop_label']
+        if st_label.startswith('Ravensburg') or st_label.startswith('Weingarten'):
+            st_label = st_label[11:]
+        elif st_label.startswith('RV,'):
+            st_label = st_label[4:]
+        elif st_label.startswith('RV'):
+            st_label = st_label[3:]
+        words = st_label.split()
+        final_label = words[0]
+        j = 0
+        while j < len(words) - 1:
+            j += 1
+            if len(final_label + words[j]) < len(st_label) / 2:
+                final_label += ' ' + words[j]
+            else:
+                final_label += '\n' + words[j]
+                break
+        while j < len(words) - 1:
+            j += 1
+            final_label += ' ' + words[j]
+
+        place_label(gri_graph, node, final_label)
+        beaut_labels[node] = final_label
+        print("Label {} von {} platziert.".format(i, len(node_list)))
+
+    with open('route_lists_s' + str(search_radius) + 'gr' + str(grids) + 'b' + str(bend_factor) + 'geo' +
+              str(geo_penalty) + '.json') as json_file:
+        route_lists = json.load(json_file)
+    straight_lines = find_lines(route_lists)
+    optimize_consistency(gri_graph, straight_lines)
     array_string = []
     for node in gri_graph.nodes:
         if gri_graph.nodes[node]['node_type'] == 'standard':
             node_string = {"id": str(node), "x": gri_graph.nodes[node]['pos'][0], "y": gri_graph.nodes[node]['pos'][1],
-                           "size": 3 if gri_graph.nodes[node]['drawn'] else 0.1}
+                       "size": 3 if gri_graph.nodes[node]['drawn'] else 0.1, "label": gri_graph.nodes[node]['stop_label'],
+                           "label_len": gri_graph.nodes[node]['label_len'], "label_hgt": gri_graph.nodes[node]['label_hgt'],
+                           "label_dir": gri_graph.nodes[node]['label_dir']}
             array_string.append(node_string)
 
     links_string = []
@@ -380,55 +426,12 @@ def plot_graph(grids, geo_penalty, bend_factor, search_radius):
         links_string.append(edge_string)
 
     params = {"nodes": array_string, "links": links_string}
-    """
-    the following code would be used for labeling the stops on the drawing of the graph,
-    but was commented out by the original author. I am not aware why.
-    """
-    """
-    node_list = sorted([node for node in grid_graph.nodes if grid_graph.nodes[node]['geo_dist'] >= 0
-                        and grid_graph.nodes[node]['drawn']], key=lambda x: grid_graph.nodes[x]['geo_dist'])
-    beaut_labels = {}
-    i = 0
-    for node in node_list:
-        i += 1
-        # make the labels a bit more beautiful
-        st_label = grid_graph.nodes[node]['stop_label']
-        if st_label.startswith('Ravensburg') or st_label.startswith('Weingarten'):
-            st_label = st_label[11:]
-        elif st_label.startswith('RV,'):
-            st_label = st_label[4:]
-        elif st_label.startswith('RV'):
-            st_label = st_label[3:]
-        words = st_label.split()
-        final_label = words[0]
-        j = 0
-        while j < len(words) - 1:
-            j += 1
-            if len(final_label + words[j]) < len(st_label) / 2:
-                final_label += ' ' + words[j]
-            else:
-                final_label += '\n' + words[j]
-                break
-        while j < len(words) - 1:
-            j += 1
-            final_label += ' ' + words[j]
-
-        place_label(grid_graph, node, final_label)
-        beaut_labels[node] = final_label
-        print("Label {} von {} platziert.".format(i, len(node_list)))
-
-    with open('route_lists_s' + str(search_radius) + 'gr' + str(grids) + 'b' + str(bend_factor) + 'geo' +
-              str(geo_penalty) + '.json') as json_file:
-        route_lists = json.load(json_file)
-    straight_lines = find_lines(route_lists)
-    optimize_consistency(grid_graph, straight_lines)
-
-    for w, (x, y) in nx.get_node_attributes(grid_graph, 'pos').items():
+    for w, (x, y) in nx.get_node_attributes(gri_graph, 'pos').items():
 
         if w not in node_list:
             continue
 
-        turn = grid_graph.nodes[w]['label_dir']
+        turn = gri_graph.nodes[w]['label_dir']
 
         angle = (2 - turn) * 45
 
@@ -447,16 +450,21 @@ def plot_graph(grids, geo_penalty, bend_factor, search_radius):
             y_fac = 1
         else:
             y_fac = 0
-
+        """
         upd = turn in [5, 6, 7]
-
+        # scale used to be a command line argument but was removed
+        scale = 1
         if upd:
             ax.text(x + x_fac * scale / 10.0, y + y_fac * scale / 10.0, beaut_labels[w],
                     horizontalalignment='right', fontsize=scale / 400.0, rotation=angle - 180, rotation_mode='anchor')
         else:
             ax.text(x + x_fac * scale / 10.0, y + y_fac * scale / 10.0, beaut_labels[w],
                     fontsize=scale / 400.0, rotation=angle, rotation_mode='anchor')
-
+        """
     print("Abgeschlossen.")
-    """
+    ROOT_DIR = os.path.dirname(os.path.abspath(__file__))
+    os.chdir(os.path.join(ROOT_DIR, 'gtfs'))
+    with open('grid_graph_s' + str(search_radius) + 'gr' + str(grids) + 'b' + str(bend_factor)
+              + 'geo' + str(geo_penalty) + "params.json", 'w') as outfile:
+        json.dump(params, outfile)
     return params
