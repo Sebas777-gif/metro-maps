@@ -11,6 +11,8 @@ let ANGLE_INCREMENT = 45; // only multiples of 45 are allowed for label directio
 let LABEL_DIRECTIONS = 8; // resulting in 8 possible directions
 let DIRECTION_OFFSET_RIGHT = 6; // Offset for rotating right aligned text. Since 0 is up in the data, but starting position is right
 let DIRECTION_OFFSET_LEFT = 2 // Offset for rotating left aligned text. Since 0 is up in the data, but starting position is left
+let SCALING_FACTOR = 3 // factor for manually scaling up the elements
+let FONT_SIZE = 8 // constant for the font size of the text
 let nodes, links, node, link, force;
 
 function displayLayout(params) {
@@ -31,12 +33,6 @@ function displayLayout(params) {
         let obj = {};
         let source = nodes.filter(e => e.id === d.source)[0];
         let target = nodes.filter(e => e.id === d.target)[0];
-        /*
-        source.x = source.x * 3
-        source.y = source.y * 3
-        target.y = target.y * 3
-        target.y = target.y * 3
-        */
         obj['source'] = source;
         obj['target'] = target;
         obj['color'] = d.color;
@@ -70,16 +66,16 @@ function displayLayout(params) {
         .attr('class', 'node')
         .attr('transform', d => {
 
-            return "translate(" + d.x*3 + "," + d.y*3 + ")";
+            return "translate(" + d.x*SCALING_FACTOR + "," + d.y*SCALING_FACTOR + ")";
         });
 
     node.append("circle")
-        .attr('r', d => d.size *3 / 2);
+        .attr('r', d => d.size * SCALING_FACTOR / 2);
         //.style("fill", d.color);
 
     node.append("text")
         .style("font-size", d => {
-            return 8
+            return FONT_SIZE
         } )
         .style("text-anchor", d => {
           if ([5,6,7].includes(Number(d.label_dir))){
@@ -88,9 +84,7 @@ function displayLayout(params) {
           return "start";
         } )
         .style("fill", d => d.color)
-        //.attr("dx", 3)
         .attr("font-weight", 300)
-        //.attr("letter-spacing",   0.3 + "em")
         .text(function (d) {
             if(d.size < 1){
                 return ""
@@ -98,7 +92,6 @@ function displayLayout(params) {
                 return d.label;
             }
         })
-        //.attr("font-family", "sans-serif")
 
         .attr('transform', d => {
             let angle
@@ -109,34 +102,8 @@ function displayLayout(params) {
             }else {
                 angle = ((Number(d.label_dir) + DIRECTION_OFFSET_RIGHT) % LABEL_DIRECTIONS) * ANGLE_INCREMENT
             }
-            if (d.label_dir != -1){
-
-                console.log(d.label)
-                console.log(d.label_dir)
-                console.log(angle)
-            }
             return "rotate("+ angle + ")";
         })
-
-    let insertLinebreaks = function (d) {
-        try{
-            //let el = svg.selectAll('.node')
-            let words = d.label.split(' ');
-            //console.log("words",words)
-            //el.text('');
-            //console.log("el", el)
-            for (var i = 0; i < words.length; i++) {
-                var tspan = node.text.append('tspan').text(words[i]);
-                if (i > 0)
-                    tspan.attr('x', 0).attr('dy', '15');
-            }
-        }catch (exception){
-
-        }
-
-    };
-
-    //node.each(insertLinebreaks);
 
     //node.append()
     force = d3.forceSimulation()
@@ -149,14 +116,14 @@ function displayLayout(params) {
 
 function tick() {
     link
-        .attr('x1', d => d.source.x*3)
-        .attr('y1', d => d.source.y*3)
-        .attr('x2', d => d.target.x*3)
-        .attr('y2', d => d.target.y*3);
+        .attr('x1', d => d.source.x*SCALING_FACTOR)
+        .attr('y1', d => d.source.y*SCALING_FACTOR)
+        .attr('x2', d => d.target.x*SCALING_FACTOR)
+        .attr('y2', d => d.target.y*SCALING_FACTOR);
     node
         .attr('transform', d => {
 
-        return "translate(" + d.x*3 + "," + d.y*3 + ")";
+        return "translate(" + d.x*SCALING_FACTOR + "," + d.y*SCALING_FACTOR + ")";
         });
 }
 
