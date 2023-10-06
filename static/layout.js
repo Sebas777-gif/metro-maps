@@ -102,6 +102,12 @@ function displayLayout(params) {
             }else {
                 angle = ((Number(d.label_dir) + DIRECTION_OFFSET_RIGHT) % LABEL_DIRECTIONS) * ANGLE_INCREMENT
             }
+            if (d.label_dir != -1){
+                console.log("label", d.label)
+                console.log("direction", d.label_dir)
+                console.log("angle", angle)
+            }
+
             return "rotate("+ angle + ")";
         })
 

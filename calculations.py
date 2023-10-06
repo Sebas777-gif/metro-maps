@@ -68,8 +68,7 @@ def save_graphs(gri_graph, col_graph, search_radius, grids, bend_factor, geo_pen
         size = col_graph.nodes[node]['n_size'] + 0.1
         node_entry = {"id": grid_node, "x": node_x, "y": node_y, "size": size}
         node_entries[grid_node] = node_entry
-    with open('nodes.json', 'w') as outfile:
-        json.dump(list(node_entries.values()), outfile)
+
     link_entries = []
     for e in col_graph.edges:
         src_node, tgt_node = e
@@ -79,6 +78,29 @@ def save_graphs(gri_graph, col_graph, search_radius, grids, bend_factor, geo_pen
     with open('links.json', 'w') as outfile:
         json.dump(link_entries, outfile)
 
+    node_entries = {}
+    for node in gri_graph.nodes:
+        grid_node = str(gri_graph.nodes[node]['pos'])
+        node_x = gri_graph.nodes[node]['pos'][0]
+        node_y = gri_graph.nodes[node]['pos'][1]
+        size = 0 # the grid graph has no size attribute
+        if gri_graph.nodes[node]['node_type'] == 'standard' and gri_graph.nodes[node]['drawn']:
+            label = gri_graph.nodes[node]["stop_label"]
+            label_dir = gri_graph.nodes[node]["label_dir"]
+            label_len = gri_graph.nodes[node]["label_len"]
+            label_hgt = gri_graph.nodes[node]["label_hgt"]
+        else:
+            label = ""
+            label_dir = -1
+            label_len = -1
+            label_hgt = -1
+        node_type = gri_graph.nodes[node]["node_type"]
+        node_entry = {"id": grid_node, "x": node_x, "y": node_y, "size": size, "label": label, "label_dir": label_dir,
+                      "label_len": label_len, "label_hgt": label_hgt, "node_type": node_type}
+        node_entries[grid_node] = node_entry
+
+    with open('nodes.json', 'w') as outfile:
+        json.dump(list(node_entries.values()), outfile)
 
 def get_lon_size():
     """

@@ -67,7 +67,7 @@ def do_polygons_intersect(a, b):
 
 def make_length(v, length):
     """
-    takes the unscaled directional vector of the label and sclaes it according to the label length
+    takes the unscaled directional vector of the label and scales it according to the label length
     :param v: directional vector v of the label
     :param length: length of the label
     :return: directional vector of the label scaled by length
@@ -119,7 +119,7 @@ def check_for_collisions(grid_graph, node, pos, label_len, label_hgt):
     node_4 = (node_3[0] + make_length(geometry[(pos + 4) % NUMBER_LABEL_DIRECTIONS], label_len)[0],
               node_3[1] + make_length(geometry[(pos + 4) % NUMBER_LABEL_DIRECTIONS], label_len)[1])
     node_poly = [node_1, node_2, node_3, node_4]
-    # iterate over the subgraph induced by node with a radius of 3 nodes
+    # iterate over the ego subgraph induced by node with a radius of 3
     for nb_node in nx.ego_graph(grid_graph, node, radius=3 * label_len, distance='alt_weight').nodes:
 
         nb_node = (nb_node[0], nb_node[1])
@@ -205,6 +205,7 @@ def place_label(grid_graph, node, stop_label):
 
     if collision:
         pos = possible_pos[0]
+        print("collision unavoidable")
 
     grid_graph.nodes[node]['label_len'] = label_len
     grid_graph.nodes[node]['label_hgt'] = label_hgt
@@ -329,7 +330,10 @@ def plot_graph(grids, geo_penalty, bend_factor, search_radius):
                                 + 'geo' + str(geo_penalty) + '.pickle')
     col_graph = nx.read_gpickle('color_graph_s' + str(search_radius) + 'gr' + str(grids) + 'b' + str(bend_factor)
                                 + 'geo' + str(geo_penalty) + '.pickle')
-
+    with open('nodes' + '.json') as node_file:
+        nodes = json.load(node_file)
+    with open('links' + '.json') as link_file:
+        links = json.load(link_file)
     edges_full = [e for e in col_graph.edges if col_graph.edges[e]['e_style'] == '']
     edges_dash = [e for e in col_graph.edges if col_graph.edges[e]['e_style'] == 'dash']
     edges_dot = [e for e in col_graph.edges if col_graph.edges[e]['e_style'] == 'dot']
