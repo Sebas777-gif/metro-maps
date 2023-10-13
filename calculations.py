@@ -89,18 +89,13 @@ def save_graphs(gri_graph, col_graph, search_radius, grids, bend_factor, geo_pen
             label_dir = gri_graph.nodes[node]["label_dir"]
             label_len = gri_graph.nodes[node]["label_len"]
             label_hgt = gri_graph.nodes[node]["label_hgt"]
-        else:
-            label = ""
-            label_dir = -1
-            label_len = -1
-            label_hgt = -1
-        node_type = gri_graph.nodes[node]["node_type"]
-        node_entry = {"id": grid_node, "x": node_x, "y": node_y, "size": size, "label": label, "label_dir": label_dir,
+            node_type = gri_graph.nodes[node]["node_type"]
+            node_entry = {"id": grid_node, "x": node_x, "y": node_y, "size": size, "label": label, "label_dir": label_dir,
                       "label_len": label_len, "label_hgt": label_hgt, "node_type": node_type}
-        node_entries[grid_node] = node_entry
-
-    with open('nodes.json', 'w') as outfile:
-        json.dump(list(node_entries.values()), outfile)
+            node_entries[grid_node] = node_entry
+    if len(node_entries) > 0:
+        with open('nodes.json', 'w') as outfile:
+            json.dump(list(node_entries.values()), outfile)
 
 def get_lon_size():
     """
@@ -136,7 +131,7 @@ def calculate_paths(gri_graph, stops, rou_lists, stop_coods, point_routes, searc
     :param search_radius: int factor unclear, see calculate method for details.
     :param bend_factor: int factor for penalizing bends in the graph.
     :param geo_penalty: int factor for penalizing geographic inaccuracy in a graph.
-    :param min_frac: a parameter which is always 1. Ask the original author why it was added
+    :param min_frac:
     :param threshold: 3 times search_radius
     :return:
     """
@@ -295,7 +290,7 @@ def get_candidates(grid_graph, stops, st, neighbor, st_node, nb_node, search_rad
     :param st_node: coordinates of st. This should not be a separate parameter
     :param nb_node: coordinates of neighbor. This should not be a separate parameter
     :param search_radius: determines the radius of the point hull
-    :param min_frac: a parameter which is always 1. Ask the original author why it was added
+    :param min_frac:
     :param threshold: 3 times search_radius.
     :return: source_candidates, target candidates: a tuple of two lists containing possible coordinates for start/target nodes
     respectively
@@ -433,9 +428,7 @@ def calculate(grids, search_radius, bend_factor, geo_penalty):
                     new_lat = lat + (int(lat) - lat + 1) / 2
                 grids += 1
                 new_coods = [(lon, new_lat), (new_lon, lat), (new_lon, new_lat)]
-                # picks the minimum between min_frac, 1, 1
-                # was originally set to 1 and therefore stays 1
-                min_frac = min(min_frac, int(lon) - lon + 1, int(lat) - lat + 1)
+                min_frac = min(min_frac, int(new_lon) - new_lon + 1, int(new_lat) - new_lat + 1)
             else:
                 new_coods = [(lon, lat)]
 
@@ -463,7 +456,6 @@ def calculate(grids, search_radius, bend_factor, geo_penalty):
         labels_of_ids[agency_stops['stop_id'][ind]] = agency_stops['stop_name'][ind]
 
     grid_graph = setup_grid_graph(stations, lines, stops, SCALE, lon_size, lat_size, bend_factor)
-    # I don't know why this is done since min_frac is currently always set to 1 which is larger than the minimum
     min_frac = max(MIN_FRAC_MINIMUM, min_frac)
 
     stops_set = list(set(stops.values()))
